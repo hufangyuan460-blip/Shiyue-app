@@ -1,0 +1,51 @@
+# Gradle and build outputs
+.gradle/
+**/build/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Local Android configuration
+local.properties
+
+# IntelliJ IDEA / Android Studio
+.idea/
+*.iml
+out/
+
+# Kotlin compilation caches
+.kotlin/
+**/.kotlin/
+*.kotlin_module
+.android/
+
+# Signing keys and secrets
+*.jks
+*.keystore
+*.key
+*.pem
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# IDE/editor caches
+.vscode/
+.fleet/
+*.hprof

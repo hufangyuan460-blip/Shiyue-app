@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">拾页</string>
+
+    <string name="nav_bookshelf">书架</string>
+    <string name="nav_reading">阅读</string>
+    <string name="nav_note">随记</string>
+    <string name="nav_review">回顾</string>
+
+    <string name="bookshelf_title">书架</string>
+    <string name="bookshelf_placeholder">你的实体书阅读档案将从这里开始。</string>
+    <string name="reading_title">阅读</string>
+    <string name="reading_placeholder">拿起一本书，专注于此刻的阅读。</string>
+    <string name="note_title">随记</string>
+    <string name="note_placeholder">记录书页之间闪现的想法。</string>
+    <string name="review_title">回顾</string>
+    <string name="review_placeholder">回看与每一本书相处的时光。</string>
+</resources>
