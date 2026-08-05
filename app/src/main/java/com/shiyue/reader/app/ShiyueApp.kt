@@ -28,7 +28,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.shiyue.reader.app.navigation.ShiyueDestination
-import com.shiyue.reader.feature.bookshelf.BookshelfScreen
+import com.shiyue.reader.app.navigation.ShiyueRoutes
+import com.shiyue.reader.feature.bookedit.AddBookRoute
+import com.shiyue.reader.feature.bookshelf.BookshelfRoute
 import com.shiyue.reader.feature.note.NoteScreen
 import com.shiyue.reader.feature.reading.ReadingScreen
 import com.shiyue.reader.feature.review.ReviewScreen
@@ -38,67 +40,70 @@ fun ShiyueApp() {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+    val showBottomBar = ShiyueDestination.entries.any { it.route == currentRoute }
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                ShiyueDestination.entries.forEach { destination ->
-                    val selected = currentRoute == destination.route
-                    val label = stringResource(destination.labelRes)
-                    val isReadingEntry = destination == ShiyueDestination.Reading
+            if (showBottomBar) {
+                NavigationBar {
+                    ShiyueDestination.entries.forEach { destination ->
+                        val selected = currentRoute == destination.route
+                        val label = stringResource(destination.labelRes)
+                        val isReadingEntry = destination == ShiyueDestination.Reading
 
-                    NavigationBarItem(
-                        modifier = Modifier.semantics {
-                            contentDescription = label
-                        },
-                        selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(ShiyueDestination.Bookshelf.route) {
-                                    saveState = true
+                        NavigationBarItem(
+                            modifier = Modifier.semantics {
+                                contentDescription = label
+                            },
+                            selected = selected,
+                            onClick = {
+                                navController.navigate(destination.route) {
+                                    popUpTo(ShiyueDestination.Bookshelf.route) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
                                 }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = {
-                            Box(
-                                modifier = Modifier
-                                    .size(if (isReadingEntry) 40.dp else 32.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        when {
-                                            selected -> MaterialTheme.colorScheme.secondaryContainer
-                                            isReadingEntry -> MaterialTheme.colorScheme.tertiaryContainer
-                                            else -> MaterialTheme.colorScheme.surfaceContainer
-                                        },
-                                    ),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    painter = painterResource(destination.iconRes),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(if (isReadingEntry) 25.dp else 22.dp),
-                                )
-                            }
-                        },
-                        label = { Text(label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            selectedTextColor = MaterialTheme.colorScheme.primary,
-                            indicatorColor = MaterialTheme.colorScheme.surfaceContainer,
-                            unselectedIconColor = if (isReadingEntry) {
-                                MaterialTheme.colorScheme.onTertiaryContainer
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
                             },
-                            unselectedTextColor = if (isReadingEntry) {
-                                MaterialTheme.colorScheme.tertiary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                            icon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(if (isReadingEntry) 40.dp else 32.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when {
+                                                selected -> MaterialTheme.colorScheme.secondaryContainer
+                                                isReadingEntry -> MaterialTheme.colorScheme.tertiaryContainer
+                                                else -> MaterialTheme.colorScheme.surfaceContainer
+                                            },
+                                        ),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        painter = painterResource(destination.iconRes),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(if (isReadingEntry) 25.dp else 22.dp),
+                                    )
+                                }
                             },
-                        ),
-                    )
+                            label = { Text(label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.surfaceContainer,
+                                unselectedIconColor = if (isReadingEntry) {
+                                    MaterialTheme.colorScheme.onTertiaryContainer
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                unselectedTextColor = if (isReadingEntry) {
+                                    MaterialTheme.colorScheme.tertiary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                            ),
+                        )
+                    }
                 }
             }
         },
@@ -110,10 +115,17 @@ fun ShiyueApp() {
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            composable(ShiyueDestination.Bookshelf.route) { BookshelfScreen() }
+            composable(ShiyueDestination.Bookshelf.route) {
+                BookshelfRoute(
+                    onAddBook = { navController.navigate(ShiyueRoutes.AddBook) },
+                )
+            }
             composable(ShiyueDestination.Reading.route) { ReadingScreen() }
             composable(ShiyueDestination.Note.route) { NoteScreen() }
             composable(ShiyueDestination.Review.route) { ReviewScreen() }
+            composable(ShiyueRoutes.AddBook) {
+                AddBookRoute(onBack = { navController.popBackStack() })
+            }
         }
     }
 }

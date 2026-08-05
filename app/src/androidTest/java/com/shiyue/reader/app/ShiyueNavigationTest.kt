@@ -13,8 +13,7 @@ class ShiyueNavigationTest {
 
     @Test
     fun appStartsOnBookshelfAndNavigatesToReading() {
-        composeRule.onNodeWithText("你的实体书阅读档案将从这里开始。")
-            .assertIsDisplayed()
+        composeRule.onNodeWithText("书架").assertIsDisplayed()
 
         composeRule.onNodeWithText("阅读")
             .performClick()

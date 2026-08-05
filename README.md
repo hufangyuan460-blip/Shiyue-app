@@ -26,10 +26,14 @@
 - Android Gradle Plugin 9.2.1、Gradle Wrapper 9.4.1 和 Gradle Kotlin DSL
 - Jetpack Compose、Material 3 和 Compose BOM 2026.06.00
 - Navigation Compose 2.9.8
+- Hilt 2.60.1
+- Room 2.8.4、KSP 2.3.8
+- Kotlin Coroutines 和 Flow 1.11.0
+- Lifecycle 2.9.4、AndroidX Hilt Navigation Compose 1.3.0
 - 单 Activity、按功能分包的工程结构
 - 最低 Android API 26，目标 API 36，编译 SDK 36.1
 
-后续业务阶段将按照[开发文档](docs/development.md)逐步引入 Hilt、Room、Coroutines、Flow 等依赖。当前骨架不包含数据库、网络、ISBN 或阅读计时业务。
+当前已建立书籍领域模型、离线数据基础层，以及“手动添加一本书并立即显示在书架”的最小界面闭环。网络、ISBN、封面选择和阅读计时业务尚未实现。
 
 发布包标识统一配置在 `gradle.properties` 的 `shiyue.applicationId`，当前值为 `com.shiyue.reader`。
 
@@ -38,9 +42,16 @@
 ```text
 app/src/main/java/com/shiyue/reader/
 ├─ app/                  # MainActivity、应用容器和导航
-├─ core/ui/              # 通用 Compose UI 与浅色/深色主题
+├─ core/
+│  ├─ data/              # 离线 Repository 实现
+│  ├─ database/          # Room Database、Entity、DAO 和映射
+│  ├─ di/                # Hilt 数据库和 Repository 模块
+│  ├─ model/             # 书籍领域模型
+│  └─ ui/                # 通用 Compose UI 与浅色/深色主题
+├─ domain/               # Repository 接口和业务用例
 └─ feature/
-   ├─ bookshelf/         # 书架
+   ├─ bookshelf/         # 真实书架列表与状态管理
+   ├─ bookedit/          # 手动添加书籍表单与状态管理
    ├─ reading/           # 阅读
    ├─ note/              # 随记
    └─ review/            # 回顾
@@ -86,4 +97,4 @@ Windows：
 
 ## 当前完成阶段
 
-已完成阶段 0 的基础工程骨架：Gradle 构建配置、单 Activity、Compose Material 3 浅色/深色主题、四个底部导航入口、占位页面、基础单元测试和 Compose UI 导航测试。尚未实现任何业务数据或业务规则。
+已完成阶段 0 工程骨架，以及阶段 1 的首个最小闭环：Hilt 依赖注入、Room v1 数据库、Book Repository、Schema 导出、真实书架 Flow、手动添加表单、字段校验与对应的 JVM/Compose 测试。新书保存到本机后会自动返回书架并显示；编辑、详情与本地封面导入仍待后续实现。

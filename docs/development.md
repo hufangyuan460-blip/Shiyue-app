@@ -95,6 +95,8 @@ UI 不直接访问 DAO 或网络接口。Repository 接口位于领域层或核�
 
 `progress` 不持久化，由 `currentPage / totalPages` 计算，避免冗余不一致。
 
+> 数据基础实现记录（2026-08-05）：Room v1 先实现 `id`、`title`、`author`、`coverPath`、`totalPages`、`currentPage`、`status`、`createdAt` 和 `updatedAt`。本阶段按手动添加数据要求将 `totalPages` 设为必填且大于 0；ISBN、出版信息和阅读起止时间字段暂不落库，后续引入时必须通过 Room Migration 和迁移测试扩展 Schema。
+
 ### 4.2 ReadingSessionEntity
 
 | 字段 | 类型 | 说明 |
@@ -424,6 +426,8 @@ backup.zip
 - 数据库和 Book Repository
 - 书架、手动添加、编辑和详情
 - 封面导入与本地保存
+
+> 当前进度（2026-08-05）：已完成 Hilt、Room v1、Book Repository、添加/观察用例、Schema 导出，以及“手动添加一本书并立即显示在书架”的最小闭环。书架和添加表单分别由独立 ViewModel 管理，通过用例访问 Repository；添加页是隐藏底部导航的独立目的地。编辑、详情和本地封面导入仍待后续实现。
 
 ### 阶段 2：阅读闭环
 
