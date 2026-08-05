@@ -1,8 +1,14 @@
 package com.shiyue.reader.feature.bookedit
 
 import com.shiyue.reader.core.model.BookStatus
-import com.shiyue.reader.domain.usecase.AddBookUseCase
+import com.shiyue.reader.domain.usecase.AddBookWithCoverUseCase
+import com.shiyue.reader.domain.usecase.CreateCaptureTargetUseCase
+import com.shiyue.reader.domain.usecase.CreateCategoryUseCase
+import com.shiyue.reader.domain.usecase.DeleteTemporaryCoverUseCase
+import com.shiyue.reader.domain.usecase.ObserveCategoriesUseCase
 import com.shiyue.reader.testutil.FakeBookRepository
+import com.shiyue.reader.testutil.FakeCategoryRepository
+import com.shiyue.reader.testutil.FakeCoverStorage
 import com.shiyue.reader.testutil.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +31,7 @@ class AddBookViewModelTest {
     @Test
     fun `invalid form shows field errors without saving`() = runTest {
         val repository = FakeBookRepository()
-        val viewModel = AddBookViewModel(AddBookUseCase(repository))
+        val viewModel = viewModel(repository)
 
         viewModel.onTitleChanged("   ")
         viewModel.onTotalPagesChanged("0")
@@ -39,7 +45,7 @@ class AddBookViewModelTest {
     @Test
     fun `successful save normalizes values and emits saved event`() = runTest {
         val repository = FakeBookRepository()
-        val viewModel = AddBookViewModel(AddBookUseCase(repository))
+        val viewModel = viewModel(repository)
         val event = async { viewModel.events.first() }
 
         viewModel.onTitleChanged("  活着  ")
@@ -59,7 +65,7 @@ class AddBookViewModelTest {
     @Test
     fun `failed save exposes retryable error`() = runTest {
         val repository = FakeBookRepository(addFailure = IllegalStateException("disk full"))
-        val viewModel = AddBookViewModel(AddBookUseCase(repository))
+        val viewModel = viewModel(repository)
 
         viewModel.onTitleChanged("长安的荔枝")
         viewModel.onTotalPagesChanged("224")
@@ -75,7 +81,7 @@ class AddBookViewModelTest {
     fun `second save is ignored while first save is running`() = runTest {
         val gate = CompletableDeferred<Unit>()
         val repository = FakeBookRepository(addGate = gate)
-        val viewModel = AddBookViewModel(AddBookUseCase(repository))
+        val viewModel = viewModel(repository)
 
         viewModel.onTitleChanged("额尔古纳河右岸")
         viewModel.onTotalPagesChanged("368")
@@ -89,5 +95,17 @@ class AddBookViewModelTest {
         gate.complete(Unit)
         advanceUntilIdle()
         assertEquals(1, repository.books.value.size)
+    }
+
+    private fun viewModel(repository: FakeBookRepository): AddBookViewModel {
+        val categories = FakeCategoryRepository()
+        val covers = FakeCoverStorage()
+        return AddBookViewModel(
+            AddBookWithCoverUseCase(repository, covers),
+            ObserveCategoriesUseCase(categories),
+            CreateCategoryUseCase(categories),
+            CreateCaptureTargetUseCase(covers),
+            DeleteTemporaryCoverUseCase(covers),
+        )
     }
 }

@@ -36,15 +36,25 @@ class AddBookUseCaseTest {
     private class RecordingBookRepository : BookRepository {
         var addedBook: Book? = null
 
-        override suspend fun addBook(book: Book) {
+        override suspend fun addBook(book: Book, categoryIds: Set<String>) {
             addedBook = book
         }
 
         override suspend fun getBook(id: String): Book? = null
 
+        override fun observeBook(id: String): Flow<Book?> = flowOf(null)
+
+        override fun observeLibraryBook(id: String) = flowOf<com.shiyue.reader.core.model.LibraryBook?>(null)
+
         override fun observeBooks(): Flow<List<Book>> = flowOf(emptyList())
 
+        override fun observeLibraryBooks() = flowOf(emptyList<com.shiyue.reader.core.model.LibraryBook>())
+
         override suspend fun updateBook(book: Book) = Unit
+
+        override suspend fun updateBookWithCategories(book: Book, categoryIds: Set<String>) = Unit
+
+        override suspend fun replaceCategories(bookId: String, categoryIds: Set<String>) = Unit
 
         override suspend fun deleteBook(id: String) = Unit
     }

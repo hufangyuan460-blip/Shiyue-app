@@ -11,6 +11,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.waitUntilAtLeastOneExists
 import com.shiyue.reader.core.data.TestBookRepository
+import com.shiyue.reader.core.data.TestBookshelfPreferences
+import com.shiyue.reader.core.data.TestCategoryRepository
 import com.shiyue.reader.feature.bookedit.AddBookTestTags
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -31,16 +33,22 @@ class ManualBookFlowTest {
 
     @Inject
     lateinit var repository: TestBookRepository
+    @Inject lateinit var categories: TestCategoryRepository
+    @Inject lateinit var preferences: TestBookshelfPreferences
 
     @Before
     fun setUp() {
         hiltRule.inject()
         repository.reset()
+        categories.reset()
+        preferences.reset()
     }
 
     @After
     fun tearDown() {
         repository.reset()
+        categories.reset()
+        preferences.reset()
     }
 
     @Test

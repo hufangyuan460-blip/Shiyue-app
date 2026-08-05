@@ -13,6 +13,7 @@ class AddBookUseCase @Inject constructor(
         author: String?,
         totalPages: Int,
         status: BookStatus = BookStatus.WISH,
+        categoryIds: Set<String> = emptySet(),
     ): Book {
         val book = Book.create(
             title = title,
@@ -20,7 +21,7 @@ class AddBookUseCase @Inject constructor(
             totalPages = totalPages,
             status = status,
         )
-        bookRepository.addBook(book)
+        bookRepository.addBook(book, categoryIds)
         return book
     }
 }

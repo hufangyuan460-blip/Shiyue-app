@@ -16,10 +16,17 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.shiyue.reader.core.data.TestBookRepository
+import com.shiyue.reader.core.data.TestCategoryRepository
+import com.shiyue.reader.core.data.TestCoverStorage
 import com.shiyue.reader.core.model.Book
 import com.shiyue.reader.core.model.BookStatus
+import com.shiyue.reader.core.model.LibraryBook
 import com.shiyue.reader.core.ui.theme.ShiyueTheme
-import com.shiyue.reader.domain.usecase.AddBookUseCase
+import com.shiyue.reader.domain.usecase.AddBookWithCoverUseCase
+import com.shiyue.reader.domain.usecase.CreateCaptureTargetUseCase
+import com.shiyue.reader.domain.usecase.CreateCategoryUseCase
+import com.shiyue.reader.domain.usecase.DeleteTemporaryCoverUseCase
+import com.shiyue.reader.domain.usecase.ObserveCategoriesUseCase
 import com.shiyue.reader.feature.bookedit.AddBookRoute
 import com.shiyue.reader.feature.bookedit.AddBookScreen
 import com.shiyue.reader.feature.bookedit.AddBookUiState
@@ -53,7 +60,15 @@ class ManualBookUiTest {
     @Test
     fun savedEventWaitsUntilLifecycleIsStarted() {
         val lifecycleOwner = MutableTestLifecycleOwner(Lifecycle.State.CREATED)
-        val viewModel = AddBookViewModel(AddBookUseCase(TestBookRepository()))
+        val categories = TestCategoryRepository()
+        val covers = TestCoverStorage()
+        val viewModel = AddBookViewModel(
+            addBook = AddBookWithCoverUseCase(TestBookRepository(categories), covers),
+            observeCategories = ObserveCategoriesUseCase(categories),
+            createCategory = CreateCategoryUseCase(categories),
+            createCaptureTarget = CreateCaptureTargetUseCase(covers),
+            deleteTemporaryCover = DeleteTemporaryCoverUseCase(covers),
+        )
         var backCount = 0
 
         composeRule.setContent {
@@ -114,7 +129,7 @@ class ManualBookUiTest {
         composeRule.setContent {
             ShiyueTheme {
                 BookshelfScreen(
-                    uiState = BookshelfUiState(isLoading = false, books = listOf(book)),
+                    uiState = BookshelfUiState(isLoading = false, books = listOf(LibraryBook(book, emptyList()))),
                     onAddBook = {},
                 )
             }

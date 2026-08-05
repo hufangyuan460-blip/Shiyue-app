@@ -97,6 +97,22 @@ UI 不直接访问 DAO 或网络接口。Repository 接口位于领域层或核�
 
 > 数据基础实现记录（2026-08-05）：Room v1 先实现 `id`、`title`、`author`、`coverPath`、`totalPages`、`currentPage`、`status`、`createdAt` 和 `updatedAt`。本阶段按手动添加数据要求将 `totalPages` 设为必填且大于 0；ISBN、出版信息和阅读起止时间字段暂不落库，后续引入时必须通过 Room Migration 和迁移测试扩展 Schema。
 
+### 4.1.1 书架 1.0 分类与迁移
+
+Room v2 新增 `CategoryEntity`：`id`、`name`、`normalizedName`、`sortOrder`、`createdAt`、`updatedAt`，以及以 `bookId + categoryId` 为联合主键的 `BookCategoryCrossRef`。关联两端均使用 `ON DELETE CASCADE`，只级联删除关联行。`normalizedName` 建立唯一索引，`sortOrder` 和关联两端建立查询索引。
+
+`MIGRATION_1_2` 只创建分类表、关联表和索引，不修改 `books`，因此旧书完整保留且没有关联时自然属于“未分类”。`app/schemas/com.shiyue.reader.core.database.ShiyueDatabase/` 同时保存 1、2 两版 JSON；Robolectric 测试实际打开 v1 数据库并由 Room 校验迁移后的 v2 结构，仪器测试另用 `MigrationTestHelper` 和相同 Schema 验证。
+
+分类排序在 Repository 的 Room 事务中重新按连续 `sortOrder` 编号。书籍及分类由一次 Room 关系查询映射为领域 `LibraryBook`，UI 不接触 Entity 或 DAO；动态分类、状态、搜索和排序在 `BookshelfViewModel` 对单个 Flow 数据集组合，目标为数百本本地书籍，避免 N+1 查询。排序偏好写入 DataStore，搜索词不持久化。
+
+### 4.1.2 CoverStorage 与文件生命周期
+
+`CoverStorage` 隔离 Activity Result UI 与文件 IO。Android 实现使用 ApplicationContext，系统相册采用 Photo Picker，系统拍照采用 `TakePicture`、FileProvider 和仅开放 `cache/cover-capture/` 的 content URI。Manifest 不声明媒体、存储或 CAMERA 权限。
+
+图片先读取尺寸并采样到合理解码范围，再处理 EXIF 旋转/镜像、用户 90° 旋转及移动缩放，最终在白色稳定背景上生成 1200×1800、质量 90 的 JPEG 到 `files/covers/`，数据库只保存相对路径。生成新封面后才更新数据库；数据库失败会删除新文件，成功后再清理旧文件。删除书籍先删除数据库记录，文件失败由启动时孤儿清理补偿。取消或返回会清理相机临时文件，进程异常遗留的临时文件也在下次启动清理。
+
+测试覆盖领域校验、DAO/Repository 隔离数据库、关系级联、组合筛选、进度与重复保存、文件失败补偿、输出尺寸，以及生产 MainActivity/NavHost/Hilt 的添加、详情、编辑、进度和分类闭环。Photo Picker、系统相机和视觉适配仍必须在真机执行人工验收。
+
 ### 4.2 ReadingSessionEntity
 
 | 字段 | 类型 | 说明 |
@@ -427,7 +443,7 @@ backup.zip
 - 书架、手动添加、编辑和详情
 - 封面导入与本地保存
 
-> 当前进度（2026-08-05）：已完成 Hilt、Room v1、Book Repository、添加/观察用例、Schema 导出，以及“手动添加一本书并立即显示在书架”的最小闭环。书架和添加表单分别由独立 ViewModel 管理，通过用例访问 Repository；添加页是隐藏底部导航的独立目的地。编辑、详情和本地封面导入仍待后续实现。
+> 当前进度（2026-08-05）：已完成书架 1.0。数据库由 v1 通过显式 `Migration(1, 2)` 升级为 v2，新增 `categories` 与 `book_category_cross_ref`，Schema 1/2 均纳入版本管理；已有书籍不改写并自然进入“未分类”。UI 仅通过 ViewModel、Use Case 和 Repository 使用 Room Flow，支持详情、编辑、页码更新、删除、多分类管理、组合筛选、搜索和 DataStore 排序偏好。本地封面通过系统 Photo Picker/相机导入，采样解码并处理 EXIF 方向，输出 1200×1800 JPEG 到 App 私有目录；不申请完整媒体库权限，取消、替换、删除及启动时均有临时/孤儿文件清理。动态筛选在 ViewModel 中对单次 Room 关系查询的领域模型进行内存组合，目标规模为数百本书，避免 N+1 查询并保持 Flow 实时更新。
 
 ### 阶段 2：阅读闭环
 

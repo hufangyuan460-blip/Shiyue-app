@@ -20,6 +20,7 @@ data class Book private constructor(
     fun updated(
         title: String = this.title,
         author: String? = this.author,
+        coverPath: String? = this.coverPath,
         totalPages: Int = this.totalPages,
         currentPage: Int = this.currentPage,
         status: BookStatus = this.status,
@@ -44,11 +45,12 @@ data class Book private constructor(
             currentPage: Int = 0,
             status: BookStatus = BookStatus.WISH,
             timestamp: Long = System.currentTimeMillis(),
+            coverPath: String? = null,
         ): Book = validated(
             id = UUID.randomUUID().toString(),
             title = title,
             author = author,
-            coverPath = null,
+            coverPath = coverPath,
             totalPages = totalPages,
             currentPage = currentPage,
             status = status,

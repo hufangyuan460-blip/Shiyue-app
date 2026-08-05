@@ -30,7 +30,7 @@ class OfflineBookRepositoryTest {
         database = Room.inMemoryDatabaseBuilder(context, ShiyueDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        repository = OfflineBookRepository(database.bookDao())
+        repository = OfflineBookRepository(database)
     }
 
     @After
@@ -54,9 +54,11 @@ class OfflineBookRepositoryTest {
         val updated = book.updated(currentPage = 50, updatedAt = 300)
         repository.updateBook(updated)
         assertEquals(updated, repository.getBook(book.id))
+        assertEquals(updated, repository.observeBook(book.id).first())
 
         repository.deleteBook(book.id)
         assertNull(repository.getBook(book.id))
+        assertNull(repository.observeBook(book.id).first())
     }
 
     private fun book(idSuffix: Int, updatedAt: Long): Book = Book.restore(

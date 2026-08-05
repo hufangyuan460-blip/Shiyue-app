@@ -27,10 +27,20 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import com.shiyue.reader.app.navigation.ShiyueDestination
 import com.shiyue.reader.app.navigation.ShiyueRoutes
+import com.shiyue.reader.app.navigation.navigateToAddBook
+import com.shiyue.reader.app.navigation.navigateToBookDetail
+import com.shiyue.reader.app.navigation.navigateToEditBook
+import com.shiyue.reader.app.navigation.navigateToUpdateProgress
+import com.shiyue.reader.app.navigation.navigateToCategories
 import com.shiyue.reader.feature.bookedit.AddBookRoute
+import com.shiyue.reader.feature.bookedit.EditBookRoute
+import com.shiyue.reader.feature.bookdetail.BookDetailRoute
+import com.shiyue.reader.feature.bookprogress.UpdateProgressRoute
+import com.shiyue.reader.feature.category.CategoryManagerRoute
 import com.shiyue.reader.feature.bookshelf.BookshelfRoute
 import com.shiyue.reader.feature.note.NoteScreen
 import com.shiyue.reader.feature.reading.ReadingScreen
@@ -119,6 +129,8 @@ fun ShiyueApp() {
             composable(ShiyueDestination.Bookshelf.route) {
                 BookshelfRoute(
                     onAddBook = navController::navigateToAddBook,
+                    onBookClick = navController::navigateToBookDetail,
+                    onManageCategories = navController::navigateToCategories,
                 )
             }
             composable(ShiyueDestination.Reading.route) { ReadingScreen() }
@@ -127,12 +139,31 @@ fun ShiyueApp() {
             composable(ShiyueRoutes.AddBook) {
                 AddBookRoute(onBack = { navController.popBackStack() })
             }
+            composable(
+                route = ShiyueRoutes.BookDetail,
+                arguments = listOf(navArgument(ShiyueRoutes.BookIdArgument) { type = NavType.StringType }),
+            ) {
+                BookDetailRoute(
+                    onBack = { navController.popBackStack() },
+                    onEdit = navController::navigateToEditBook,
+                    onUpdateProgress = navController::navigateToUpdateProgress,
+                )
+            }
+            composable(
+                route = ShiyueRoutes.EditBook,
+                arguments = listOf(navArgument(ShiyueRoutes.BookIdArgument) { type = NavType.StringType }),
+            ) {
+                EditBookRoute(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = ShiyueRoutes.UpdateProgress,
+                arguments = listOf(navArgument(ShiyueRoutes.BookIdArgument) { type = NavType.StringType }),
+            ) {
+                UpdateProgressRoute(onBack = { navController.popBackStack() })
+            }
+            composable(ShiyueRoutes.Categories) {
+                CategoryManagerRoute(onBack = { navController.popBackStack() })
+            }
         }
-    }
-}
-
-private fun NavHostController.navigateToAddBook() {
-    navigate(ShiyueRoutes.AddBook) {
-        launchSingleTop = true
     }
 }

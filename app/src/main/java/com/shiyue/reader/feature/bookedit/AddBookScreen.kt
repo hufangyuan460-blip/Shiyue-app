@@ -1,9 +1,15 @@
 package com.shiyue.reader.feature.bookedit
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,18 +18,11 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,28 +30,22 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import coil3.compose.AsyncImage
 import com.shiyue.reader.R
 import com.shiyue.reader.core.model.BookStatus
-import com.shiyue.reader.core.ui.theme.ShiyueTheme
-import com.shiyue.reader.feature.bookshelf.statusLabel
+import com.shiyue.reader.feature.bookdetail.BackButton
 
 object AddBookTestTags {
     const val Title = "add_book_title"
@@ -63,32 +56,52 @@ object AddBookTestTags {
 }
 
 @Composable
-fun AddBookRoute(
-    onBack: () -> Unit,
-    viewModel: AddBookViewModel = hiltViewModel(),
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+fun AddBookRoute(onBack: () -> Unit, viewModel: AddBookViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
-
+    val context = LocalContext.current
+    val cameraAvailable = remember {
+        Intent(MediaStore.ACTION_IMAGE_CAPTURE).resolveActivity(context.packageManager) != null
+    }
+    val camera = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture(), viewModel::onCameraResult)
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { viewModel.onCoverSourceSelected(it.toString()) }
+    }
+    val discardAndBack = { viewModel.discardChanges(); onBack() }
+    BackHandler(onBack = discardAndBack)
     LaunchedEffect(viewModel, lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.events.collect { event ->
                 when (event) {
                     AddBookEvent.Saved -> onBack()
+                    is AddBookEvent.LaunchCamera -> camera.launch(Uri.parse(event.uri))
                 }
             }
         }
     }
-
     AddBookScreen(
-        uiState = uiState,
+        uiState = state,
         onTitleChanged = viewModel::onTitleChanged,
         onAuthorChanged = viewModel::onAuthorChanged,
         onTotalPagesChanged = viewModel::onTotalPagesChanged,
         onStatusChanged = viewModel::onStatusChanged,
         onSave = viewModel::save,
-        onBack = onBack,
+        onBack = discardAndBack,
+        onToggleCategory = viewModel::toggleCategory,
+        onNewCategoryNameChanged = viewModel::onNewCategoryNameChanged,
+        onCreateCategory = viewModel::createCategory,
+        onPickPhoto = { picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        onTakePhoto = viewModel::requestCamera,
+        cameraAvailable = cameraAvailable,
+        onRemoveCover = viewModel::removePendingCover,
     )
+    state.cropSourceUri?.let { source ->
+        CoverCropDialog(
+            source, state.cropTransform, viewModel::onCropTransformChanged, viewModel::confirmCrop,
+            viewModel::cancelCrop,
+            onReselect = { viewModel.cancelCrop(); picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -101,189 +114,35 @@ fun AddBookScreen(
     onStatusChanged: (BookStatus) -> Unit,
     onSave: () -> Unit,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
+    onToggleCategory: (String) -> Unit = {},
+    onNewCategoryNameChanged: (String) -> Unit = {},
+    onCreateCategory: () -> Unit = {},
+    onPickPhoto: () -> Unit = {},
+    onTakePhoto: () -> Unit = {},
+    cameraAvailable: Boolean = false,
+    onRemoveCover: () -> Unit = {},
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.add_book_title)) },
-                navigationIcon = {
-                    val backDescription = stringResource(R.string.navigate_back)
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.semantics { contentDescription = backDescription },
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = null,
-                        )
-                    }
-                },
-            )
-        },
-    ) { innerPadding ->
+    val state = uiState
+    Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.add_book_title)) }, navigationIcon = { BackButton(onBack) }) }) { padding ->
         Column(
-            modifier = Modifier
-                .padding(innerPadding)
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .imePadding()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
+            Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
+                .navigationBarsPadding().imePadding().padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.add_book_intro),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(24.dp))
-            OutlinedTextField(
-                value = uiState.title,
-                onValueChange = onTitleChanged,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(AddBookTestTags.Title),
-                label = { Text(stringResource(R.string.book_title_label)) },
-                supportingText = if (uiState.titleError) {
-                    { Text(stringResource(R.string.book_title_error)) }
-                } else {
-                    null
-                },
-                isError = uiState.titleError,
-                singleLine = true,
-                enabled = !uiState.isSaving,
-            )
-            Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = uiState.author,
-                onValueChange = onAuthorChanged,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(AddBookTestTags.Author),
-                label = { Text(stringResource(R.string.book_author_label)) },
-                singleLine = true,
-                enabled = !uiState.isSaving,
-            )
-            Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                value = uiState.totalPages,
-                onValueChange = onTotalPagesChanged,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(AddBookTestTags.TotalPages),
-                label = { Text(stringResource(R.string.book_total_pages_label)) },
-                supportingText = if (uiState.totalPagesError) {
-                    { Text(stringResource(R.string.book_total_pages_error)) }
-                } else {
-                    null
-                },
-                isError = uiState.totalPagesError,
-                singleLine = true,
-                enabled = !uiState.isSaving,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
-            Spacer(Modifier.height(16.dp))
-            BookStatusField(
-                status = uiState.status,
-                enabled = !uiState.isSaving,
-                onStatusChanged = onStatusChanged,
-            )
-            if (uiState.saveFailed) {
-                Spacer(Modifier.height(16.dp))
-                Text(
-                    text = stringResource(R.string.add_book_save_failed),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                )
+            state.pendingCover?.let {
+                AsyncImage(it.sourceUri, stringResource(R.string.crop_cover_preview_description), Modifier.fillMaxWidth().height(210.dp))
             }
-            Spacer(Modifier.height(28.dp))
-            Button(
-                onClick = onSave,
-                enabled = !uiState.isSaving,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 52.dp)
-                    .testTag(AddBookTestTags.Save),
-            ) {
-                Text(
-                    if (uiState.isSaving) {
-                        stringResource(R.string.saving_book)
-                    } else {
-                        stringResource(R.string.save_book)
-                    },
-                )
+            CoverActions(state.pendingCover != null, cameraAvailable, !state.isSaving, onPickPhoto, onTakePhoto, onRemoveCover)
+            OutlinedTextField(state.title, onTitleChanged, Modifier.fillMaxWidth().testTag(AddBookTestTags.Title), label = { Text(stringResource(R.string.book_title_label)) }, isError = state.titleError, supportingText = if (state.titleError) {{ Text(stringResource(R.string.book_title_error)) }} else null, singleLine = true)
+            OutlinedTextField(state.author, onAuthorChanged, Modifier.fillMaxWidth().testTag(AddBookTestTags.Author), label = { Text(stringResource(R.string.book_author_label)) }, singleLine = true)
+            OutlinedTextField(state.totalPages, onTotalPagesChanged, Modifier.fillMaxWidth().testTag(AddBookTestTags.TotalPages), label = { Text(stringResource(R.string.book_total_pages_label)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), isError = state.totalPagesError, supportingText = if (state.totalPagesError) {{ Text(stringResource(R.string.book_total_pages_error)) }} else null, singleLine = true)
+            BookStatusField(state.status, !state.isSaving, onStatusChanged, AddBookTestTags.Status)
+            CategorySelector(state.categories, state.selectedCategoryIds, state.newCategoryName, state.categoryError, !state.isSaving, onToggleCategory, onNewCategoryNameChanged, onCreateCategory)
+            if (state.saveFailed) Text(stringResource(R.string.add_book_save_failed), color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+            Spacer(Modifier.height(8.dp))
+            Button(onSave, Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag(AddBookTestTags.Save), enabled = !state.isSaving) {
+                Text(if (state.isSaving) stringResource(R.string.saving_book) else stringResource(R.string.save_book))
             }
         }
-    }
-}
-
-@Composable
-private fun BookStatusField(
-    status: BookStatus,
-    enabled: Boolean,
-    onStatusChanged: (BookStatus) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    Column {
-        Text(
-            text = stringResource(R.string.book_status_label),
-            style = MaterialTheme.typography.labelLarge,
-        )
-        Spacer(Modifier.height(8.dp))
-        Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(
-                onClick = { expanded = true },
-                enabled = enabled,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 52.dp)
-                    .testTag(AddBookTestTags.Status),
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = statusLabel(status),
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp),
-                    )
-                    Text(stringResource(R.string.open_status_options))
-                }
-            }
-            DropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.fillMaxWidth(0.8f),
-            ) {
-                BookStatus.entries.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(statusLabel(option)) },
-                        onClick = {
-                            onStatusChanged(option)
-                            expanded = false
-                        },
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun AddBookScreenPreview() {
-    ShiyueTheme {
-        AddBookScreen(
-            uiState = AddBookUiState(),
-            onTitleChanged = {},
-            onAuthorChanged = {},
-            onTotalPagesChanged = {},
-            onStatusChanged = {},
-            onSave = {},
-            onBack = {},
-        )
     }
 }

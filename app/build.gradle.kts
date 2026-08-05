@@ -55,6 +55,10 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+
+    sourceSets {
+        getByName("androidTest").assets.directories.add("$projectDir/schemas")
+    }
 }
 
 room {
@@ -63,6 +67,7 @@ room {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
@@ -73,6 +78,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.hilt.android)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.coil.compose)
     ksp(libs.androidx.room.compiler)
     ksp(libs.hilt.compiler)
 
@@ -92,6 +98,7 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.hilt.android.testing)
     kspAndroidTest(libs.hilt.compiler)
 
