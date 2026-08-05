@@ -18,6 +18,8 @@
     <string name="default_book_cover_description">《%1$s》的默认封面</string>
     <string name="book_page_progress">第 %1$d / %2$d 页</string>
     <string name="book_progress_percent">%1$d%%</string>
+    <string name="book_progress_accessibility">阅读进度 %1$d%%</string>
+    <string name="book_progress_accessibility_named">《%1$s》的阅读进度 %2$d%%</string>
     <string name="book_status_wish">想读</string>
     <string name="book_status_reading">在读</string>
     <string name="book_status_finished">已读</string>
@@ -36,6 +38,43 @@
     <string name="save_book">保存到书架</string>
     <string name="saving_book">正在保存…</string>
     <string name="add_book_save_failed">这本书暂时没有保存成功，请检查后重试。</string>
+
+    <string name="book_detail_title">书籍详情</string>
+    <string name="book_detail_loading">正在读取书籍详情</string>
+    <string name="book_not_found">这本书不存在或已被移除。</string>
+    <string name="book_detail_load_failed">暂时无法读取这本书，请重试或返回。</string>
+    <string name="back_to_bookshelf">返回书架</string>
+    <string name="back_to_book_detail">返回书籍详情</string>
+    <string name="retry">重试</string>
+    <string name="navigate_back_generic">返回</string>
+    <string name="book_created_at">加入书架</string>
+    <string name="book_updated_at">最近更新</string>
+    <string name="update_reading_progress">更新阅读进度</string>
+    <string name="edit_book">编辑书籍</string>
+
+    <string name="edit_book_title">编辑书籍</string>
+    <string name="book_total_pages_below_current">总页数不能少于当前已读的第 %1$d 页</string>
+    <string name="save_changes">保存修改</string>
+    <string name="edit_book_save_failed">修改暂时没有保存成功，输入已保留，请重试。</string>
+    <string name="discard_changes_title">放弃修改？</string>
+    <string name="discard_changes_message">尚未保存的书籍信息会丢失。</string>
+    <string name="discard_changes">放弃修改</string>
+    <string name="continue_editing">继续编辑</string>
+
+    <string name="current_and_total_pages">当前第 %1$d 页，共 %2$d 页</string>
+    <string name="new_page_label">新的当前页</string>
+    <string name="new_page_error">请输入 0 到 %1$d 之间的整数</string>
+    <string name="progress_preview">更新后进度：%1$d%%</string>
+    <string name="save_progress">保存阅读进度</string>
+    <string name="update_progress_failed">阅读进度暂时没有保存成功，输入已保留，请重试。</string>
+    <string name="confirm_rewind_title">确认回退阅读进度？</string>
+    <string name="confirm_rewind_message">当前记录为第 %1$d 页，确定回退到第 %2$d 页吗？</string>
+    <string name="confirm_update">确认更新</string>
+    <string name="finish_book_title">读到最后一页了</string>
+    <string name="finish_book_message">是否同时将这本书标记为已读？</string>
+    <string name="mark_as_finished">标记为已读</string>
+    <string name="update_page_only">仅更新页码</string>
+    <string name="cancel">取消</string>
     <string name="reading_title">阅读</string>
     <string name="reading_placeholder">拿起一本书，专注于此刻的阅读。</string>
     <string name="note_title">随记</string>

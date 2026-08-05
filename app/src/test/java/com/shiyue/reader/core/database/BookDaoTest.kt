@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.shiyue.reader.core.model.BookStatus
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
@@ -81,6 +82,34 @@ class BookDaoTest {
         assertEquals(emptyList<BookEntity>(), emissions[0])
         assertEquals(1, emissions[1].size)
         assertEquals(entity(idSuffix = 1).id, emissions[1].first().id)
+    }
+
+    @Test
+    fun observeByIdEmitsNullThenInsertedAndUpdatedBook() = runBlocking {
+        val original = entity(idSuffix = 4, title = "原书名")
+        val updated = original.copy(title = "新书名", updatedAt = 900)
+        val emissions = mutableListOf<BookEntity?>()
+        val emitted = Channel<Unit>(Channel.UNLIMITED)
+        val job = launch {
+            dao.observeById(original.id).take(3).collect { book ->
+                emissions += book
+                emitted.send(Unit)
+            }
+        }
+
+        withTimeout(5_000) { emitted.receive() }
+        dao.insert(original)
+        withTimeout(5_000) { emitted.receive() }
+        dao.update(updated)
+        withTimeout(5_000) { emitted.receive() }
+        withTimeout(5_000) { job.join() }
+
+        assertEquals(listOf(null, original, updated), emissions)
+    }
+
+    @Test
+    fun observeByIdReturnsNullForMissingBook() = runBlocking {
+        assertNull(dao.observeById(entity(idSuffix = 9).id).first())
     }
 
     @Test

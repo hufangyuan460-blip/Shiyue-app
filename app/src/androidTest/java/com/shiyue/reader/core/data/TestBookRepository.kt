@@ -6,6 +6,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 @Singleton
@@ -17,6 +18,10 @@ class TestBookRepository @Inject constructor() : BookRepository {
     }
 
     override suspend fun getBook(id: String): Book? = books.value.firstOrNull { it.id == id }
+
+    override fun observeBook(id: String): Flow<Book?> = books.map { current ->
+        current.firstOrNull { it.id == id }
+    }
 
     override fun observeBooks(): Flow<List<Book>> = books
 
@@ -34,4 +39,10 @@ class TestBookRepository @Inject constructor() : BookRepository {
     fun reset() {
         books.value = emptyList()
     }
+
+    fun seed(vararg initialBooks: Book) {
+        books.value = initialBooks.toList().sortedByDescending(Book::updatedAt)
+    }
+
+    fun booksSnapshot(): List<Book> = books.value
 }

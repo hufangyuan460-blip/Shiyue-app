@@ -17,4 +17,14 @@ enum class ShiyueDestination(
 
 object ShiyueRoutes {
     const val AddBook = "add_book"
+    const val BookIdArgument = "bookId"
+    const val BookDetail = "book/{$BookIdArgument}"
+    const val EditBook = "book/{$BookIdArgument}/edit"
+    const val UpdateProgress = "book/{$BookIdArgument}/progress"
+
+    fun bookDetail(bookId: String) = "book/$bookId"
+
+    fun editBook(bookId: String) = "book/$bookId/edit"
+
+    fun updateProgress(bookId: String) = "book/$bookId/progress"
 }

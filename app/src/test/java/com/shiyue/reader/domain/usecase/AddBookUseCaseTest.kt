@@ -42,6 +42,8 @@ class AddBookUseCaseTest {
 
         override suspend fun getBook(id: String): Book? = null
 
+        override fun observeBook(id: String): Flow<Book?> = flowOf(null)
+
         override fun observeBooks(): Flow<List<Book>> = flowOf(emptyList())
 
         override suspend fun updateBook(book: Book) = Unit

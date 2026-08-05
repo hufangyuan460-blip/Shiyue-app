@@ -8,6 +8,8 @@ interface BookRepository {
 
     suspend fun getBook(id: String): Book?
 
+    fun observeBook(id: String): Flow<Book?>
+
     fun observeBooks(): Flow<List<Book>>
 
     suspend fun updateBook(book: Book)

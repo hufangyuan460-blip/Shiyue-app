@@ -20,6 +20,10 @@ class OfflineBookRepository @Inject constructor(
 
     override suspend fun getBook(id: String): Book? = bookDao.getById(id)?.asExternalModel()
 
+    override fun observeBook(id: String): Flow<Book?> = bookDao.observeById(id).map { book ->
+        book?.asExternalModel()
+    }
+
     override fun observeBooks(): Flow<List<Book>> = bookDao.observeAll().map { books ->
         books.map { it.asExternalModel() }
     }

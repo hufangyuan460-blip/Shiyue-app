@@ -34,12 +34,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shiyue.reader.R
@@ -48,13 +51,18 @@ import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.ui.theme.ShiyueTheme
 import kotlin.math.roundToInt
 
+object BookshelfTestTags {
+    fun bookCard(bookId: String) = "bookshelf_book_$bookId"
+}
+
 @Composable
 fun BookshelfRoute(
     onAddBook: () -> Unit,
+    onBookClick: (String) -> Unit,
     viewModel: BookshelfViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    BookshelfScreen(uiState = uiState, onAddBook = onAddBook)
+    BookshelfScreen(uiState = uiState, onAddBook = onAddBook, onBookClick = onBookClick)
 }
 
 @Composable
@@ -62,13 +70,14 @@ fun BookshelfScreen(
     uiState: BookshelfUiState,
     onAddBook: () -> Unit,
     modifier: Modifier = Modifier,
+    onBookClick: (String) -> Unit = {},
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         when {
             uiState.isLoading -> BookshelfLoading()
             uiState.loadFailed -> BookshelfLoadError()
             uiState.books.isEmpty() -> EmptyBookshelf(onAddBook = onAddBook)
-            else -> BookList(books = uiState.books)
+            else -> BookList(books = uiState.books, onBookClick = onBookClick)
         }
 
         if (!uiState.isLoading && !uiState.loadFailed && uiState.books.isNotEmpty()) {
@@ -150,7 +159,7 @@ private fun EmptyBookshelf(onAddBook: () -> Unit) {
 }
 
 @Composable
-private fun BookList(books: List<Book>) {
+private fun BookList(books: List<Book>, onBookClick: (String) -> Unit) {
     LazyColumn(
         contentPadding = PaddingValues(start = 20.dp, top = 24.dp, end = 20.dp, bottom = 104.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -163,7 +172,7 @@ private fun BookList(books: List<Book>) {
             )
         }
         items(items = books, key = Book::id) { book ->
-            BookCard(book = book)
+            BookCard(book = book, onClick = { onBookClick(book.id) })
         }
     }
 }
@@ -172,10 +181,13 @@ private fun BookList(books: List<Book>) {
 fun BookCard(
     book: Book,
     modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     val percentage = (book.progress * 100).roundToInt()
+    val progressDescription = stringResource(R.string.book_progress_accessibility_named, book.title, percentage)
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().testTag(BookshelfTestTags.bookCard(book.id)),
+        onClick = onClick,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
     ) {
@@ -214,7 +226,14 @@ fun BookCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
+                        .clip(RoundedCornerShape(3.dp))
+                        .semantics {
+                            contentDescription = progressDescription
+                            progressBarRangeInfo = ProgressBarRangeInfo(
+                                current = book.progress.toFloat(),
+                                range = 0f..1f,
+                            )
+                        },
                     color = MaterialTheme.colorScheme.secondary,
                 )
                 Spacer(Modifier.height(10.dp))
@@ -276,7 +295,7 @@ private fun BookProgressPercentage(percentage: Int) {
 }
 
 @Composable
-private fun DefaultBookCover(
+fun DefaultBookCover(
     title: String,
     modifier: Modifier = Modifier,
 ) {

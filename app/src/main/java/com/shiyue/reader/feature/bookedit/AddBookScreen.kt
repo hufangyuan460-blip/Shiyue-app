@@ -187,6 +187,7 @@ fun AddBookScreen(
                 status = uiState.status,
                 enabled = !uiState.isSaving,
                 onStatusChanged = onStatusChanged,
+                testTag = AddBookTestTags.Status,
             )
             if (uiState.saveFailed) {
                 Spacer(Modifier.height(16.dp))
@@ -218,10 +219,11 @@ fun AddBookScreen(
 }
 
 @Composable
-private fun BookStatusField(
+fun BookStatusField(
     status: BookStatus,
     enabled: Boolean,
     onStatusChanged: (BookStatus) -> Unit,
+    testTag: String,
 ) {
     var expanded by remember { mutableStateOf(false) }
     Column {
@@ -237,7 +239,7 @@ private fun BookStatusField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 52.dp)
-                    .testTag(AddBookTestTags.Status),
+                    .testTag(testTag),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
