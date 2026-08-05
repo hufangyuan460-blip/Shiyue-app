@@ -27,6 +27,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavHostController
 import com.shiyue.reader.app.navigation.ShiyueDestination
 import com.shiyue.reader.app.navigation.ShiyueRoutes
 import com.shiyue.reader.feature.bookedit.AddBookRoute
@@ -117,7 +118,7 @@ fun ShiyueApp() {
         ) {
             composable(ShiyueDestination.Bookshelf.route) {
                 BookshelfRoute(
-                    onAddBook = { navController.navigate(ShiyueRoutes.AddBook) },
+                    onAddBook = navController::navigateToAddBook,
                 )
             }
             composable(ShiyueDestination.Reading.route) { ReadingScreen() }
@@ -127,5 +128,11 @@ fun ShiyueApp() {
                 AddBookRoute(onBack = { navController.popBackStack() })
             }
         }
+    }
+}
+
+private fun NavHostController.navigateToAddBook() {
+    navigate(ShiyueRoutes.AddBook) {
+        launchSingleTop = true
     }
 }

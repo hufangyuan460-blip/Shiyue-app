@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -41,13 +42,25 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.shiyue.reader.R
 import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.ui.theme.ShiyueTheme
 import com.shiyue.reader.feature.bookshelf.statusLabel
+
+object AddBookTestTags {
+    const val Title = "add_book_title"
+    const val Author = "add_book_author"
+    const val TotalPages = "add_book_total_pages"
+    const val Status = "add_book_status"
+    const val Save = "add_book_save"
+}
 
 @Composable
 fun AddBookRoute(
@@ -55,11 +68,14 @@ fun AddBookRoute(
     viewModel: AddBookViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(viewModel) {
-        viewModel.events.collect { event ->
-            when (event) {
-                AddBookEvent.Saved -> onBack()
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            viewModel.events.collect { event ->
+                when (event) {
+                    AddBookEvent.Saved -> onBack()
+                }
             }
         }
     }
@@ -124,7 +140,9 @@ fun AddBookScreen(
             OutlinedTextField(
                 value = uiState.title,
                 onValueChange = onTitleChanged,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(AddBookTestTags.Title),
                 label = { Text(stringResource(R.string.book_title_label)) },
                 supportingText = if (uiState.titleError) {
                     { Text(stringResource(R.string.book_title_error)) }
@@ -139,7 +157,9 @@ fun AddBookScreen(
             OutlinedTextField(
                 value = uiState.author,
                 onValueChange = onAuthorChanged,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(AddBookTestTags.Author),
                 label = { Text(stringResource(R.string.book_author_label)) },
                 singleLine = true,
                 enabled = !uiState.isSaving,
@@ -148,7 +168,9 @@ fun AddBookScreen(
             OutlinedTextField(
                 value = uiState.totalPages,
                 onValueChange = onTotalPagesChanged,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag(AddBookTestTags.TotalPages),
                 label = { Text(stringResource(R.string.book_total_pages_label)) },
                 supportingText = if (uiState.totalPagesError) {
                     { Text(stringResource(R.string.book_total_pages_error)) }
@@ -180,7 +202,8 @@ fun AddBookScreen(
                 enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .heightIn(min = 52.dp)
+                    .testTag(AddBookTestTags.Save),
             ) {
                 Text(
                     if (uiState.isSaving) {
@@ -213,14 +236,20 @@ private fun BookStatusField(
                 enabled = enabled,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
+                    .heightIn(min = 52.dp)
+                    .testTag(AddBookTestTags.Status),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(statusLabel(status))
+                    Text(
+                        text = statusLabel(status),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp),
+                    )
                     Text(stringResource(R.string.open_status_options))
                 }
             }

@@ -2,6 +2,7 @@ package com.shiyue.reader.feature.bookshelf
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.shiyue.reader.R
@@ -205,25 +207,7 @@ fun BookCard(
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = stringResource(
-                            R.string.book_page_progress,
-                            book.currentPage,
-                            book.totalPages,
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = stringResource(R.string.book_progress_percent, percentage),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.secondary,
-                        fontWeight = FontWeight.Medium,
-                    )
-                }
+                BookProgressSummary(book = book, percentage = percentage)
                 Spacer(Modifier.height(8.dp))
                 LinearProgressIndicator(
                     progress = { book.progress.toFloat() },
@@ -242,6 +226,53 @@ fun BookCard(
             }
         }
     }
+}
+
+@Composable
+private fun BookProgressSummary(
+    book: Book,
+    percentage: Int,
+) {
+    val fontScale = LocalDensity.current.fontScale
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val useStackedLayout = fontScale > 1.3f || maxWidth < 180.dp
+        if (useStackedLayout) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                BookPageProgress(book)
+                BookProgressPercentage(percentage)
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                BookPageProgress(book)
+                BookProgressPercentage(percentage)
+            }
+        }
+    }
+}
+
+@Composable
+private fun BookPageProgress(book: Book) {
+    Text(
+        text = stringResource(
+            R.string.book_page_progress,
+            book.currentPage,
+            book.totalPages,
+        ),
+        style = MaterialTheme.typography.bodyMedium,
+    )
+}
+
+@Composable
+private fun BookProgressPercentage(percentage: Int) {
+    Text(
+        text = stringResource(R.string.book_progress_percent, percentage),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.secondary,
+        fontWeight = FontWeight.Medium,
+    )
 }
 
 @Composable
