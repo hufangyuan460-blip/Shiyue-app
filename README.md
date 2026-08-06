@@ -6,6 +6,7 @@
 
 - [产品设计文档](docs/product-design.md)
 - [开发文档](docs/development.md)
+- [开发日志](docs/development-log.md)
 
 ## 第一版目标
 
