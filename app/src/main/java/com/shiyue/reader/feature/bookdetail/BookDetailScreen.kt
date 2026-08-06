@@ -53,6 +53,7 @@ import com.shiyue.reader.core.model.Book
 import com.shiyue.reader.feature.bookshelf.DefaultBookCover
 import com.shiyue.reader.feature.bookshelf.BookCover
 import com.shiyue.reader.feature.bookshelf.statusLabel
+import com.shiyue.reader.feature.reading.BookReadingHistorySection
 import java.text.DateFormat
 import java.util.Date
 import kotlin.math.roundToInt
@@ -67,6 +68,8 @@ fun BookDetailRoute(
     onBack: () -> Unit,
     onEdit: (String) -> Unit,
     onUpdateProgress: (String) -> Unit,
+    onStartReading: (String) -> Unit,
+    onSessionClick: (String) -> Unit,
     viewModel: BookDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -82,6 +85,8 @@ fun BookDetailRoute(
         onRetry = viewModel::retry,
         onEdit = onEdit,
         onUpdateProgress = onUpdateProgress,
+        onStartReading = onStartReading,
+        onSessionClick = onSessionClick,
         onDelete = viewModel::delete,
     )
 }
@@ -94,6 +99,8 @@ fun BookDetailScreen(
     onRetry: () -> Unit,
     onEdit: (String) -> Unit,
     onUpdateProgress: (String) -> Unit,
+    onStartReading: (String) -> Unit = {},
+    onSessionClick: (String) -> Unit = {},
     onDelete: () -> Unit = {},
 ) {
     val loadingDescription = stringResource(R.string.book_detail_loading)
@@ -126,6 +133,8 @@ fun BookDetailScreen(
                     deleteFailed = uiState.deleteFailed,
                     onEdit = { onEdit(uiState.libraryBook.book.id) },
                     onUpdateProgress = { onUpdateProgress(uiState.libraryBook.book.id) },
+                    onStartReading = { onStartReading(uiState.libraryBook.book.id) },
+                    onSessionClick = onSessionClick,
                     onDelete = onDelete,
                 )
             }
@@ -140,6 +149,8 @@ private fun DetailContent(
     deleteFailed: Boolean,
     onEdit: () -> Unit,
     onUpdateProgress: () -> Unit,
+    onStartReading: () -> Unit,
+    onSessionClick: (String) -> Unit,
     onDelete: () -> Unit,
 ) {
     val book = libraryBook.book
@@ -180,6 +191,11 @@ private fun DetailContent(
         DetailDate(R.string.book_updated_at, book.updatedAt)
         Spacer(Modifier.height(28.dp))
         Button(
+            onClick = onStartReading,
+            modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
+        ) { Text(stringResource(R.string.start_reading)) }
+        Spacer(Modifier.height(12.dp))
+        Button(
             onClick = onUpdateProgress,
             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag(BookDetailTestTags.UpdateProgress),
         ) {
@@ -199,6 +215,7 @@ private fun DetailContent(
             modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp),
         ) { Text(stringResource(R.string.delete_book), color = MaterialTheme.colorScheme.error) }
         if (deleteFailed) Text(stringResource(R.string.delete_book_failed), color = MaterialTheme.colorScheme.error)
+        BookReadingHistorySection(onSessionClick)
     }
     if (confirmDelete) androidx.compose.material3.AlertDialog(
         onDismissRequest = { confirmDelete = false },

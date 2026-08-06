@@ -36,6 +36,12 @@ import com.shiyue.reader.app.navigation.navigateToBookDetail
 import com.shiyue.reader.app.navigation.navigateToEditBook
 import com.shiyue.reader.app.navigation.navigateToUpdateProgress
 import com.shiyue.reader.app.navigation.navigateToCategories
+import com.shiyue.reader.app.navigation.navigateToStartReading
+import com.shiyue.reader.app.navigation.navigateToActiveReading
+import com.shiyue.reader.app.navigation.navigateToFinishReading
+import com.shiyue.reader.app.navigation.navigateToRecoverReading
+import com.shiyue.reader.app.navigation.navigateToReadingSessionDetail
+import com.shiyue.reader.app.navigation.navigateToEditReadingSession
 import com.shiyue.reader.feature.bookedit.AddBookRoute
 import com.shiyue.reader.feature.bookedit.EditBookRoute
 import com.shiyue.reader.feature.bookdetail.BookDetailRoute
@@ -43,7 +49,13 @@ import com.shiyue.reader.feature.bookprogress.UpdateProgressRoute
 import com.shiyue.reader.feature.category.CategoryManagerRoute
 import com.shiyue.reader.feature.bookshelf.BookshelfRoute
 import com.shiyue.reader.feature.note.NoteScreen
-import com.shiyue.reader.feature.reading.ReadingScreen
+import com.shiyue.reader.feature.reading.ReadingRoute
+import com.shiyue.reader.feature.reading.StartReadingRoute
+import com.shiyue.reader.feature.reading.ActiveReadingRoute
+import com.shiyue.reader.feature.reading.FinishReadingRoute
+import com.shiyue.reader.feature.reading.RecoverReadingRoute
+import com.shiyue.reader.feature.reading.ReadingSessionDetailRoute
+import com.shiyue.reader.feature.reading.EditReadingSessionRoute
 import com.shiyue.reader.feature.review.ReviewScreen
 
 @Composable
@@ -133,7 +145,9 @@ fun ShiyueApp() {
                     onManageCategories = navController::navigateToCategories,
                 )
             }
-            composable(ShiyueDestination.Reading.route) { ReadingScreen() }
+            composable(ShiyueDestination.Reading.route) {
+                ReadingRoute(navController::navigateToStartReading, navController::navigateToActiveReading, navController::navigateToRecoverReading)
+            }
             composable(ShiyueDestination.Note.route) { NoteScreen() }
             composable(ShiyueDestination.Review.route) { ReviewScreen() }
             composable(ShiyueRoutes.AddBook) {
@@ -147,6 +161,8 @@ fun ShiyueApp() {
                     onBack = { navController.popBackStack() },
                     onEdit = navController::navigateToEditBook,
                     onUpdateProgress = navController::navigateToUpdateProgress,
+                    onStartReading = navController::navigateToStartReading,
+                    onSessionClick = navController::navigateToReadingSessionDetail,
                 )
             }
             composable(
@@ -163,6 +179,33 @@ fun ShiyueApp() {
             }
             composable(ShiyueRoutes.Categories) {
                 CategoryManagerRoute(onBack = { navController.popBackStack() })
+            }
+            composable(ShiyueRoutes.StartReading, arguments = listOf(navArgument(ShiyueRoutes.BookIdArgument) { type = NavType.StringType })) {
+                StartReadingRoute({ navController.popBackStack() }, navController::navigateToActiveReading)
+            }
+            composable(ShiyueRoutes.ActiveReading) {
+                ActiveReadingRoute({ navController.popBackStack() }, navController::navigateToFinishReading, navController::navigateToRecoverReading)
+            }
+            composable(ShiyueRoutes.FinishReading, arguments = listOf(navArgument(ShiyueRoutes.SessionIdArgument) { type = NavType.StringType })) {
+                FinishReadingRoute(onBack = { navController.popBackStack() }, onSaved = { bookId ->
+                    navController.navigate(ShiyueRoutes.bookDetail(bookId)) { popUpTo(ShiyueDestination.Reading.route) }
+                })
+            }
+            composable(ShiyueRoutes.RecoverReading, arguments = listOf(navArgument(ShiyueRoutes.SessionIdArgument) { type = NavType.StringType })) {
+                RecoverReadingRoute(
+                    onBack = { navController.popBackStack() },
+                    onActive = navController::navigateToActiveReading,
+                    onFinish = {
+                        val sessionId = it.arguments?.getString(ShiyueRoutes.SessionIdArgument) ?: return@RecoverReadingRoute
+                        navController.navigateToFinishReading(sessionId)
+                    },
+                )
+            }
+            composable(ShiyueRoutes.ReadingSessionDetail, arguments = listOf(navArgument(ShiyueRoutes.SessionIdArgument) { type = NavType.StringType })) {
+                ReadingSessionDetailRoute({ navController.popBackStack() }, navController::navigateToEditReadingSession)
+            }
+            composable(ShiyueRoutes.EditReadingSession, arguments = listOf(navArgument(ShiyueRoutes.SessionIdArgument) { type = NavType.StringType })) {
+                EditReadingSessionRoute(onBack = { navController.popBackStack() })
             }
         }
     }

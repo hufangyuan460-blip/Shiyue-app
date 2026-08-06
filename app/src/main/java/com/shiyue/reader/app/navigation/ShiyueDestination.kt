@@ -22,10 +22,23 @@ object ShiyueRoutes {
     const val EditBook = "book/{$BookIdArgument}/edit"
     const val UpdateProgress = "book/{$BookIdArgument}/progress"
     const val Categories = "categories"
+    const val SessionIdArgument = "sessionId"
+    const val StartReading = "reading/start/{$BookIdArgument}"
+    const val ActiveReading = "reading/active"
+    const val FinishReading = "reading/finish/{$SessionIdArgument}"
+    const val RecoverReading = "reading/recover/{$SessionIdArgument}"
+    const val ReadingSessionDetail = "reading/session/{$SessionIdArgument}"
+    const val EditReadingSession = "reading/session/{$SessionIdArgument}/edit"
 
     fun bookDetail(bookId: String) = "book/$bookId"
 
     fun editBook(bookId: String) = "book/$bookId/edit"
 
     fun updateProgress(bookId: String) = "book/$bookId/progress"
+
+    fun startReading(bookId: String) = "reading/start/$bookId"
+    fun finishReading(sessionId: String) = "reading/finish/$sessionId"
+    fun recoverReading(sessionId: String) = "reading/recover/$sessionId"
+    fun readingSessionDetail(sessionId: String) = "reading/session/$sessionId"
+    fun editReadingSession(sessionId: String) = "reading/session/$sessionId/edit"
 }
