@@ -8,6 +8,8 @@ import com.shiyue.reader.domain.repository.BookshelfPreferences
 import com.shiyue.reader.domain.repository.CoverStorage
 import com.shiyue.reader.core.data.preferences.DataStoreBookshelfPreferences
 import com.shiyue.reader.core.data.storage.AndroidCoverStorage
+import com.shiyue.reader.core.data.repository.OfflineReadingSessionRepository
+import com.shiyue.reader.domain.repository.ReadingSessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -34,4 +36,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCoverStorage(storage: AndroidCoverStorage): CoverStorage
+
+    @Binds
+    @Singleton
+    abstract fun bindReadingSessionRepository(repository: OfflineReadingSessionRepository): ReadingSessionRepository
 }

@@ -42,3 +42,40 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         )
     }
 }
+
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS `reading_sessions` (
+                `id` TEXT NOT NULL,
+                `book_id` TEXT NOT NULL,
+                `state` TEXT NOT NULL,
+                `started_at_epoch_ms` INTEGER NOT NULL,
+                `ended_at_epoch_ms` INTEGER,
+                `start_page` INTEGER NOT NULL,
+                `end_page` INTEGER,
+                `active_duration_ms` INTEGER NOT NULL,
+                `active_segment_started_at_epoch_ms` INTEGER,
+                `active_segment_started_at_elapsed_realtime_ms` INTEGER,
+                `update_book_progress` INTEGER NOT NULL,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                PRIMARY KEY(`id`),
+                FOREIGN KEY(`book_id`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )""".trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_reading_sessions_book_id` ON `reading_sessions` (`book_id`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_reading_sessions_state` ON `reading_sessions` (`state`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_reading_sessions_started_at_epoch_ms` ON `reading_sessions` (`started_at_epoch_ms`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_reading_sessions_book_id_started_at_epoch_ms` ON `reading_sessions` (`book_id`, `started_at_epoch_ms`)")
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS `active_reading_session` (
+                `slot` INTEGER NOT NULL,
+                `session_id` TEXT NOT NULL,
+                PRIMARY KEY(`slot`),
+                FOREIGN KEY(`session_id`) REFERENCES `reading_sessions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+            )""".trimIndent(),
+        )
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_active_reading_session_session_id` ON `active_reading_session` (`session_id`)")
+    }
+}

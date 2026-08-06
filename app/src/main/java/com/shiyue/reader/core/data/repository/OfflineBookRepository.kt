@@ -64,7 +64,12 @@ class OfflineBookRepository @Inject constructor(
     }
 
     override suspend fun deleteBook(id: String) {
-        check(bookDao.deleteById(id) == 1) { "Book not found: $id" }
+        database.withTransaction {
+            check(database.readingSessionDao().unfinishedCountForBook(id) == 0) {
+                "Cannot delete a book with an active reading session"
+            }
+            check(bookDao.deleteById(id) == 1) { "Book not found: $id" }
+        }
     }
 
     private suspend fun insertRefs(bookId: String, categoryIds: Set<String>) {
