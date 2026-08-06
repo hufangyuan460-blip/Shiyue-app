@@ -4,10 +4,12 @@ import com.shiyue.reader.core.data.TestBookRepository
 import com.shiyue.reader.core.data.TestBookshelfPreferences
 import com.shiyue.reader.core.data.TestCategoryRepository
 import com.shiyue.reader.core.data.TestCoverStorage
+import com.shiyue.reader.core.data.TestReadingSessionRepository
 import com.shiyue.reader.domain.repository.BookRepository
 import com.shiyue.reader.domain.repository.BookshelfPreferences
 import com.shiyue.reader.domain.repository.CategoryRepository
 import com.shiyue.reader.domain.repository.CoverStorage
+import com.shiyue.reader.domain.repository.ReadingSessionRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.components.SingletonComponent
@@ -35,4 +37,8 @@ abstract class TestRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCoverStorage(storage: TestCoverStorage): CoverStorage
+
+    @Binds
+    @Singleton
+    abstract fun bindReadingSessionRepository(repository: TestReadingSessionRepository): ReadingSessionRepository
 }
