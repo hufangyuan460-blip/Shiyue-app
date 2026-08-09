@@ -7,6 +7,16 @@ plugins {
 }
 
 val configuredApplicationId = providers.gradleProperty("shiyue.applicationId").get()
+val appVersionName = "0.1.0"
+
+androidComponents {
+    onVariants(selector().all()) { variant ->
+        val apkShortName = "shiyue"
+        variant.outputs.forEach { output ->
+            output.outputFileName.set("$apkShortName-$appVersionName.apk")
+        }
+    }
+}
 
 android {
     namespace = configuredApplicationId
@@ -22,7 +32,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = appVersionName
 
         testInstrumentationRunner = "com.shiyue.reader.HiltTestRunner"
     }
