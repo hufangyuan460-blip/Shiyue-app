@@ -2,6 +2,7 @@ package com.shiyue.reader.feature.bookshelf
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.shiyue.reader.core.model.BookReadingSummary
 import com.shiyue.reader.core.model.BookSortMode
 import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.model.CategoryFilter
@@ -10,6 +11,7 @@ import com.shiyue.reader.core.model.LibraryBook
 import com.shiyue.reader.domain.repository.BookshelfPreferences
 import com.shiyue.reader.domain.usecase.ObserveCategoriesUseCase
 import com.shiyue.reader.domain.usecase.ObserveLibraryBooksUseCase
+import com.shiyue.reader.domain.usecase.ObserveReadingTimesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.Locale
 import javax.inject.Inject
@@ -25,6 +27,7 @@ data class BookshelfUiState(
     val books: List<LibraryBook> = emptyList(),
     val categories: List<CategorySummary> = emptyList(),
     val totalBookCount: Int = 0,
+    val readingTimes: Map<String, BookReadingSummary> = emptyMap(),
     val categoryFilter: CategoryFilter = CategoryFilter.All,
     val statusFilter: BookStatus? = null,
     val searchQuery: String = "",
@@ -43,6 +46,7 @@ private data class FilterState(
 class BookshelfViewModel @Inject constructor(
     observeBooks: ObserveLibraryBooksUseCase,
     observeCategories: ObserveCategoriesUseCase,
+    private val observeReadingTimes: ObserveReadingTimesUseCase,
     private val preferences: BookshelfPreferences,
 ) : ViewModel() {
     private val categoryFilter = MutableStateFlow<CategoryFilter>(CategoryFilter.All)
@@ -57,7 +61,7 @@ class BookshelfViewModel @Inject constructor(
         ::FilterState,
     )
 
-    val uiState = combine(observeBooks(), observeCategories(), filters) { allBooks, categories, filter ->
+    val uiState = combine(observeBooks(), observeCategories(), filters, observeReadingTimes()) { allBooks, categories, filter, readingTimes ->
         val validCategory = when (val selected = filter.category) {
             is CategoryFilter.CategoryId -> if (categories.any { it.category.id == selected.id }) selected else CategoryFilter.All
             else -> selected
@@ -98,6 +102,7 @@ class BookshelfViewModel @Inject constructor(
             books = filtered,
             categories = categories,
             totalBookCount = allBooks.size,
+            readingTimes = readingTimes,
             categoryFilter = validCategory,
             statusFilter = filter.status,
             searchQuery = filter.query,

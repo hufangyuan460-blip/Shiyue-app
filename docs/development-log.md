@@ -2,6 +2,37 @@
 
 本日志使用中文记录各阶段已经完成、验证并交付的开发进度。产品规则以 `docs/product-design.md` 为准，技术实现以 `docs/development.md` 为准。
 
+## 2026-08-09：书架展示每本书的阅读时间
+
+### 已完成功能
+
+- 书架每张书籍卡片新增一行“今日 X · 累计 Y”，分别展示该书今日有效阅读时长和累计有效阅读时长。
+- 今日与累计口径与既有规则一致：只统计 `COMPLETED` 场次的有效时长，跨午夜场次按结束时间归入结束日，暂停与进行中的场次不计入。
+- 聚合逻辑抽为领域函数 `aggregateReadingTimes`，Repository 通过 `observeReadingTimes()` 按书分组实时下发；今日边界按当前时区计算，并配合午夜滚动信号避免跨日后停留在昨天。
+- 未新增数据库表或字段，无 Room Migration/Schema 变更。
+
+### 自动化验证
+
+- 73 项 JVM 单元及 Robolectric 测试全部通过，含聚合函数边界、Repository 集成与书架 ViewModel 的新增用例。
+- Android Lint 通过，无错误。
+- `compileDebugAndroidTestKotlin` 通过，androidTest 的测试 Repository 已同步实现新接口。
+- `git diff --check` 通过。
+
+## 2026-08-09：回顾页 1.0
+
+### 已完成功能
+
+- 回顾页从占位页升级为真实页面：展示 App 累计阅读总时长、今日/本周/本月时长、当月阅读日历热力图（可上/下月切换）、连续阅读天数、累计阅读天数、读完书籍数和阅读时长最多的书。
+- 数据口径与书架一致：只统计 `COMPLETED` 场次，跨午夜按结束时间归入当天；周以周一开始，连续阅读按“今天或昨天起向前不间断有阅读”计算。
+- 领域函数 `computeReviewStatistics` 负责全 App 统计，Repository 新增 `observeReviewStatistics()` 实时下发；日历当月每日时长由 `ReviewViewModel` 按月过滤，午夜滚动信号保证跨日后自动刷新。
+- 未新增数据库表或字段，无 Room Migration/Schema 变更；日历为纯 Compose 实现，未引入第三方图表库。
+
+### 自动化验证
+
+- 81 项 JVM 单元及 Robolectric 测试全部通过，含统计聚合边界（周/月/连续阅读/最久书）、Repository 集成与回顾 ViewModel 的新增用例。
+- Android Lint 通过，无错误；`compileDebugAndroidTestKotlin` 通过，androidTest 测试 Repository 已同步实现新接口。
+- `git diff --check` 通过。
+
 ## 2026-08-06：书架 1.0 完成并通过真机验收
 
 对应功能提交：`f614fdbc972a50e82237b0a5a32d6a3b9f4af8ec`

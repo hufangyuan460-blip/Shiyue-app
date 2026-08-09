@@ -20,6 +20,14 @@ class ObserveBookReadingSummaryUseCase @Inject constructor(private val repositor
     operator fun invoke(bookId: String) = repository.observeHistorySummary(bookId)
 }
 
+class ObserveReadingTimesUseCase @Inject constructor(private val repository: ReadingSessionRepository) {
+    operator fun invoke() = repository.observeReadingTimes()
+}
+
+class ObserveReviewStatisticsUseCase @Inject constructor(private val repository: ReadingSessionRepository) {
+    operator fun invoke() = repository.observeReviewStatistics()
+}
+
 class InspectActiveReadingUseCase @Inject constructor(private val repository: ReadingSessionRepository) {
     suspend operator fun invoke() = repository.inspectActiveSession()
 }

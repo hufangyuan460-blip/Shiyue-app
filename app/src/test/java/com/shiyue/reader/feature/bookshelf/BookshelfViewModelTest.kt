@@ -1,15 +1,18 @@
 package com.shiyue.reader.feature.bookshelf
 
 import com.shiyue.reader.core.model.Book
+import com.shiyue.reader.core.model.BookReadingSummary
 import com.shiyue.reader.core.model.BookSortMode
 import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.model.Category
 import com.shiyue.reader.core.model.CategoryFilter
 import com.shiyue.reader.domain.usecase.ObserveLibraryBooksUseCase
 import com.shiyue.reader.domain.usecase.ObserveCategoriesUseCase
+import com.shiyue.reader.domain.usecase.ObserveReadingTimesUseCase
 import com.shiyue.reader.testutil.FakeBookRepository
 import com.shiyue.reader.testutil.FakeCategoryRepository
 import com.shiyue.reader.testutil.FakeBookshelfPreferences
+import com.shiyue.reader.testutil.FakeReadingSessionRepository
 import com.shiyue.reader.testutil.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.collect
@@ -33,6 +36,7 @@ class BookshelfViewModelTest {
         val viewModel = BookshelfViewModel(
             ObserveLibraryBooksUseCase(repository),
             ObserveCategoriesUseCase(FakeCategoryRepository()),
+            ObserveReadingTimesUseCase(FakeReadingSessionRepository()),
             FakeBookshelfPreferences(),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -60,7 +64,8 @@ class BookshelfViewModelTest {
         val categories = FakeCategoryRepository(listOf(literature))
         val preferences = FakeBookshelfPreferences()
         val viewModel = BookshelfViewModel(
-            ObserveLibraryBooksUseCase(repository), ObserveCategoriesUseCase(categories), preferences,
+            ObserveLibraryBooksUseCase(repository), ObserveCategoriesUseCase(categories),
+            ObserveReadingTimesUseCase(FakeReadingSessionRepository()), preferences,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
 
@@ -72,5 +77,26 @@ class BookshelfViewModelTest {
 
         assertEquals(listOf(matching.id), viewModel.uiState.value.books.map { it.book.id })
         assertEquals(BookSortMode.PROGRESS_DESC, viewModel.uiState.value.sortMode)
+    }
+
+    @Test
+    fun `reading times surface in ui state per book`() = runTest {
+        val book = Book.create("今日在读", null, 100)
+        val repository = FakeBookRepository(listOf(book))
+        val readingRepository = FakeReadingSessionRepository(
+            mapOf(book.id to BookReadingSummary(book.id, totalDurationMs = 90_000, todayDurationMs = 60_000)),
+        )
+        val viewModel = BookshelfViewModel(
+            ObserveLibraryBooksUseCase(repository),
+            ObserveCategoriesUseCase(FakeCategoryRepository()),
+            ObserveReadingTimesUseCase(readingRepository),
+            FakeBookshelfPreferences(),
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect() }
+        advanceUntilIdle()
+
+        val summary = viewModel.uiState.value.readingTimes[book.id]
+        assertEquals(90_000L, summary?.totalDurationMs)
+        assertEquals(60_000L, summary?.todayDurationMs)
     }
 }

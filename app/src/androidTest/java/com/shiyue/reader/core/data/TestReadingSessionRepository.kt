@@ -1,8 +1,12 @@
 package com.shiyue.reader.core.data
 
+import com.shiyue.reader.core.model.BookReadingSummary
 import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.model.ReadingHistorySummary
 import com.shiyue.reader.core.model.ReadingSession
+import com.shiyue.reader.core.model.ReviewStatistics
+import com.shiyue.reader.core.model.aggregateReadingTimes
+import com.shiyue.reader.core.model.computeReviewStatistics
 import com.shiyue.reader.domain.repository.ActiveSessionInspection
 import com.shiyue.reader.domain.repository.BookProgressUpdate
 import com.shiyue.reader.domain.repository.ReadingSessionRepository
@@ -30,6 +34,10 @@ class TestReadingSessionRepository @Inject constructor(
     override fun observeSession(id: String): Flow<ReadingSession?> = sessions.map { it.firstOrNull { item -> item.id == id } }
     override fun observeCompletedSessions(bookId: String): Flow<List<ReadingSession>> = sessions.map { list -> list.filter { it.bookId == bookId && it.endedAtEpochMs != null }.sortedByDescending { it.startedAtEpochMs } }
     override fun observeHistorySummary(bookId: String): Flow<ReadingHistorySummary> = observeCompletedSessions(bookId).map { list -> ReadingHistorySummary(list.sumOf { it.activeDurationMs }, list.size, if (list.isEmpty()) 0 else 1, list.maxOfOrNull { requireNotNull(it.endedAtEpochMs) }) }
+    override fun observeReadingTimes(): Flow<Map<String, BookReadingSummary>> = sessions.map { list -> aggregateReadingTimes(list, wall) }
+    override fun observeReviewStatistics(): Flow<ReviewStatistics> = combine(sessions, books.observeBooks()) { list, bookList ->
+        computeReviewStatistics(list, bookList.filter { it.status == BookStatus.FINISHED }.map { it.id }.toSet(), wall)
+    }
     override suspend fun getSession(id: String) = sessions.value.firstOrNull { it.id == id }
     override suspend fun inspectActiveSession(): ActiveSessionInspection { val session = getSession(activeId.value ?: return ActiveSessionInspection(null)); return ActiveSessionInspection(session, session?.durationAt(now())) }
     override suspend fun startReading(bookId: String, startPage: Int, switchBookToReading: Boolean): StartReadingResult {

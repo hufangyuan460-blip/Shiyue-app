@@ -4,12 +4,17 @@ import android.app.Application
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
+import com.shiyue.reader.core.database.ReadingSessionEntity
 import com.shiyue.reader.core.database.ShiyueDatabase
 import com.shiyue.reader.core.model.Book
+import com.shiyue.reader.core.model.BookReadingSummary
 import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.model.ReadingSessionState
 import com.shiyue.reader.domain.repository.BookProgressUpdate
 import com.shiyue.reader.domain.time.TimeSource
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -76,6 +81,66 @@ class OfflineReadingSessionRepositoryTest {
     @Test fun invalidPageRollsBackWithoutCreatingSlot() = runBlocking {
         assertThrows(IllegalArgumentException::class.java) { runBlocking { repository.startReading(bookId, 101, false) } }
         assertNull(repository.observeActiveSession().first())
+    }
+
+    @Test fun readingTimesAggregateCompletedSessionsPerBook() = runBlocking {
+        val secondBook = Book.create("第二本书", null, 200)
+        books.addBook(secondBook)
+        clock.advance(1_789_000_000_000L)
+        val todayStart = LocalDate.ofInstant(Instant.ofEpochMilli(clock.wall), ZoneId.systemDefault())
+            .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        insertCompleted("10000000-0000-0000-0000-000000000001", bookId, todayStart + 3_600_000L, 60_000)
+        insertCompleted("10000000-0000-0000-0000-000000000002", bookId, todayStart + 7_200_000L, 90_000)
+        insertCompleted("10000000-0000-0000-0000-000000000003", secondBook.id, todayStart + 3_600_000L, 30_000)
+        val result = repository.observeReadingTimes().first()
+        assertEquals(150_000, result.getValue(bookId).totalDurationMs)
+        assertEquals(150_000, result.getValue(bookId).todayDurationMs)
+        assertEquals(30_000, result.getValue(secondBook.id).totalDurationMs)
+        assertEquals(2, result.size)
+    }
+
+    @Test fun readingTimesTodayOnlyCountsSessionsEndedOnCurrentDay() = runBlocking {
+        clock.advance(1_789_000_000_000L)
+        val todayStart = LocalDate.ofInstant(Instant.ofEpochMilli(clock.wall), ZoneId.systemDefault())
+            .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        insertCompleted("10000000-0000-0000-0000-000000000011", bookId, todayStart + 3_600_000L, 60_000)
+        insertCompleted("10000000-0000-0000-0000-000000000012", bookId, todayStart - 3_600_000L, 120_000)
+        val summary = repository.observeReadingTimes().first().getValue(bookId)
+        assertEquals(180_000, summary.totalDurationMs)
+        assertEquals(60_000, summary.todayDurationMs)
+    }
+
+    @Test fun readingTimesEmptyWhenNoCompletedSessions() = runBlocking {
+        assertEquals(emptyMap<String, BookReadingSummary>(), repository.observeReadingTimes().first())
+    }
+
+    @Test fun reviewStatisticsAggregateAllBooksAndFinishedCount() = runBlocking {
+        val secondBook = Book.create("第二本书", null, 200)
+        books.addBook(secondBook)
+        books.updateBook(secondBook.updated(status = BookStatus.FINISHED, updatedAt = 1))
+        clock.advance(1_789_000_000_000L)
+        val todayStart = LocalDate.ofInstant(Instant.ofEpochMilli(clock.wall), ZoneId.systemDefault())
+            .atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        insertCompleted("10000000-0000-0000-0000-000000000021", bookId, todayStart + 3_600_000L, 60_000)
+        insertCompleted("10000000-0000-0000-0000-000000000022", secondBook.id, todayStart - 3_600_000L, 120_000)
+        val stats = repository.observeReviewStatistics().first()
+        assertEquals(180_000, stats.totalDurationMs)
+        assertEquals(60_000, stats.todayDurationMs)
+        assertEquals(2, stats.readingDays)
+        assertEquals(1, stats.finishedBookCount)
+        assertEquals(secondBook.id, stats.topBookId)
+    }
+
+    private suspend fun insertCompleted(id: String, forBookId: String, endedAt: Long, durationMs: Long) {
+        db.readingSessionDao().insertSession(
+            ReadingSessionEntity(
+                id = id, bookId = forBookId, state = ReadingSessionState.COMPLETED,
+                startedAtEpochMs = endedAt - 3_600_000L, endedAtEpochMs = endedAt,
+                startPage = 0, endPage = 1, activeDurationMs = durationMs,
+                activeSegmentStartedAtEpochMs = null, activeSegmentStartedAtElapsedRealtimeMs = null,
+                updateBookProgress = false, createdAt = endedAt, updatedAt = endedAt,
+            ),
+        )
     }
 
     private class FakeTimeSource(var wall: Long, var elapsed: Long) : TimeSource {

@@ -61,6 +61,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.shiyue.reader.R
 import com.shiyue.reader.core.model.Book
+import com.shiyue.reader.core.model.BookReadingSummary
 import com.shiyue.reader.core.model.BookSortMode
 import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.model.CategoryFilter
@@ -170,7 +171,11 @@ private fun LibraryGrid(
             }
         } else {
             items(state.books, key = { it.book.id }) { libraryBook ->
-                BookCard(libraryBook, onClick = { onBookClick(libraryBook.book.id) })
+                BookCard(
+                    libraryBook,
+                    readingSummary = state.readingTimes[libraryBook.book.id],
+                    onClick = { onBookClick(libraryBook.book.id) },
+                )
             }
         }
     }
@@ -279,7 +284,12 @@ private fun BookshelfEmpty(state: BookshelfUiState, onAddBook: () -> Unit) {
 }
 
 @Composable
-fun BookCard(libraryBook: LibraryBook, modifier: Modifier = Modifier, onClick: () -> Unit = {}) {
+fun BookCard(
+    libraryBook: LibraryBook,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+    readingSummary: BookReadingSummary? = null,
+) {
     val book = libraryBook.book
     val percentage = (book.progress * 100).roundToInt()
     Card(
@@ -319,8 +329,31 @@ fun BookCard(libraryBook: LibraryBook, modifier: Modifier = Modifier, onClick: (
                 else stringResource(R.string.book_category_summary, libraryBook.categories.first().name, libraryBook.categories.size - 1)
                 Text(categoryText, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            readingSummary?.let { summary ->
+                Spacer(Modifier.height(4.dp))
+                val readingTimeText = stringResource(
+                    R.string.reading_time_today_total,
+                    formatDuration(summary.todayDurationMs),
+                    formatDuration(summary.totalDurationMs),
+                )
+                Text(
+                    readingTimeText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.semantics { contentDescription = readingTimeText },
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun formatDuration(value: Long): String {
+    val minutes = value / 60_000L
+    return if (minutes >= 60) stringResource(R.string.duration_hours_minutes, minutes / 60, minutes % 60)
+    else stringResource(R.string.duration_minutes_value, minutes)
 }
 
 @Composable

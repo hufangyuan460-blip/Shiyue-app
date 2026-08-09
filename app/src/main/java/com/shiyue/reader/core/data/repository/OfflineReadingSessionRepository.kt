@@ -5,21 +5,30 @@ import com.shiyue.reader.core.database.ActiveReadingSessionEntity
 import com.shiyue.reader.core.database.ShiyueDatabase
 import com.shiyue.reader.core.database.asEntity
 import com.shiyue.reader.core.database.asExternalModel
+import com.shiyue.reader.core.model.BookReadingSummary
 import com.shiyue.reader.core.model.BookStatus
 import com.shiyue.reader.core.model.ReadingHistorySummary
 import com.shiyue.reader.core.model.ReadingSession
 import com.shiyue.reader.core.model.ReadingSessionState
+import com.shiyue.reader.core.model.ReviewStatistics
+import com.shiyue.reader.core.model.aggregateReadingTimes
+import com.shiyue.reader.core.model.computeReviewStatistics
 import com.shiyue.reader.domain.repository.ActiveSessionInspection
 import com.shiyue.reader.domain.repository.BookProgressUpdate
 import com.shiyue.reader.domain.repository.ReadingSessionRepository
 import com.shiyue.reader.domain.repository.StartReadingResult
 import com.shiyue.reader.domain.time.TimeSource
 import com.shiyue.reader.domain.time.read
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
+import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 @Singleton
@@ -51,6 +60,40 @@ class OfflineReadingSessionRepository @Inject constructor(
                 lastReadAtEpochMs = sessions.maxOfOrNull { it.endedAtEpochMs ?: it.startedAtEpochMs },
             )
         }
+
+    override fun observeReadingTimes(): Flow<Map<String, BookReadingSummary>> =
+        combine(
+            dao.observeAllCompleted(),
+            dayRolloverTicker(),
+        ) { sessions, _ ->
+            aggregateReadingTimes(
+                sessions = sessions.map { it.asExternalModel() },
+                nowEpochMs = timeSource.wallClockMillis(),
+            )
+        }
+
+    override fun observeReviewStatistics(): Flow<ReviewStatistics> =
+        combine(
+            dao.observeAllCompleted(),
+            books.observeAll(),
+            dayRolloverTicker(),
+        ) { sessions, bookEntities, _ ->
+            computeReviewStatistics(
+                sessions = sessions.map { it.asExternalModel() },
+                finishedBookIds = bookEntities.filter { it.status == BookStatus.FINISHED }.map { it.id }.toSet(),
+                nowEpochMs = timeSource.wallClockMillis(),
+            )
+        }
+
+    private fun dayRolloverTicker(): Flow<Unit> = flow {
+        while (true) {
+            emit(Unit)
+            val zone = ZoneId.systemDefault()
+            val now = ZonedDateTime.now(zone)
+            val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay(zone)
+            delay(Duration.between(now, nextMidnight).toMillis() + 50)
+        }
+    }
 
     override suspend fun getSession(id: String): ReadingSession? = dao.getSession(id)?.asExternalModel()
 

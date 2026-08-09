@@ -1,9 +1,11 @@
 package com.shiyue.reader.domain.repository
 
+import com.shiyue.reader.core.model.BookReadingSummary
 import com.shiyue.reader.core.model.ReadingClockAnomaly
 import com.shiyue.reader.core.model.ReadingDuration
 import com.shiyue.reader.core.model.ReadingHistorySummary
 import com.shiyue.reader.core.model.ReadingSession
+import com.shiyue.reader.core.model.ReviewStatistics
 import kotlinx.coroutines.flow.Flow
 
 data class StartReadingResult(
@@ -29,6 +31,8 @@ interface ReadingSessionRepository {
     fun observeSession(id: String): Flow<ReadingSession?>
     fun observeCompletedSessions(bookId: String): Flow<List<ReadingSession>>
     fun observeHistorySummary(bookId: String): Flow<ReadingHistorySummary>
+    fun observeReadingTimes(): Flow<Map<String, BookReadingSummary>>
+    fun observeReviewStatistics(): Flow<ReviewStatistics>
     suspend fun getSession(id: String): ReadingSession?
     suspend fun inspectActiveSession(): ActiveSessionInspection
     suspend fun startReading(bookId: String, startPage: Int, switchBookToReading: Boolean): StartReadingResult

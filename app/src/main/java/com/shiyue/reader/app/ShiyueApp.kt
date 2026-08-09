@@ -56,7 +56,7 @@ import com.shiyue.reader.feature.reading.FinishReadingRoute
 import com.shiyue.reader.feature.reading.RecoverReadingRoute
 import com.shiyue.reader.feature.reading.ReadingSessionDetailRoute
 import com.shiyue.reader.feature.reading.EditReadingSessionRoute
-import com.shiyue.reader.feature.review.ReviewScreen
+import com.shiyue.reader.feature.review.ReviewRoute
 
 @Composable
 fun ShiyueApp() {
@@ -149,7 +149,7 @@ fun ShiyueApp() {
                 ReadingRoute(navController::navigateToStartReading, navController::navigateToActiveReading, navController::navigateToRecoverReading)
             }
             composable(ShiyueDestination.Note.route) { NoteScreen() }
-            composable(ShiyueDestination.Review.route) { ReviewScreen() }
+            composable(ShiyueDestination.Review.route) { ReviewRoute() }
             composable(ShiyueRoutes.AddBook) {
                 AddBookRoute(onBack = { navController.popBackStack() })
             }

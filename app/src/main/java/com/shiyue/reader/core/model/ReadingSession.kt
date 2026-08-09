@@ -1,6 +1,10 @@
 package com.shiyue.reader.core.model
 
 import com.shiyue.reader.domain.time.TimeReading
+import java.time.Duration
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.UUID
 import kotlin.math.abs
 
@@ -231,3 +235,110 @@ data class ReadingHistorySummary(
     val readingDays: Int = 0,
     val lastReadAtEpochMs: Long? = null,
 )
+
+data class BookReadingSummary(
+    val bookId: String,
+    val totalDurationMs: Long,
+    val todayDurationMs: Long,
+)
+
+/**
+ * 按书聚合已完成场次的有效阅读时长。
+ * 累计时长只统计 COMPLETED 场次；今日时长同样只统计 COMPLETED 场次，并按场次结束时间归入当天。
+ */
+fun aggregateReadingTimes(
+    sessions: List<ReadingSession>,
+    nowEpochMs: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+): Map<String, BookReadingSummary> {
+    val todayStart = Instant.ofEpochMilli(nowEpochMs).atZone(zone).toLocalDate()
+        .atStartOfDay(zone).toInstant().toEpochMilli()
+    val tomorrowStart = todayStart + Duration.ofDays(1).toMillis()
+    return sessions.asSequence()
+        .filter { it.state == ReadingSessionState.COMPLETED }
+        .groupBy { it.bookId }
+        .mapValues { (bookId, bookSessions) ->
+            BookReadingSummary(
+                bookId = bookId,
+                totalDurationMs = bookSessions.sumOf { it.activeDurationMs },
+                todayDurationMs = bookSessions
+                    .filter { session ->
+                        session.endedAtEpochMs?.let { it >= todayStart && it < tomorrowStart } == true
+                    }
+                    .sumOf { it.activeDurationMs },
+            )
+        }
+}
+
+data class DailyReadingDuration(
+    val date: LocalDate,
+    val durationMs: Long,
+)
+
+data class ReviewStatistics(
+    val totalDurationMs: Long = 0,
+    val todayDurationMs: Long = 0,
+    val weekDurationMs: Long = 0,
+    val monthDurationMs: Long = 0,
+    val readingDays: Int = 0,
+    val currentStreakDays: Int = 0,
+    val finishedBookCount: Int = 0,
+    val dailyDurations: List<DailyReadingDuration> = emptyList(),
+    val topBookId: String? = null,
+    val topBookDurationMs: Long = 0,
+)
+
+/**
+ * 回顾页全 App 统计。只统计 COMPLETED 场次，跨午夜按结束时间归入当天；
+ * 周以周一开始，连续阅读按“今天或昨天起向前不间断有阅读”计算。
+ */
+fun computeReviewStatistics(
+    sessions: List<ReadingSession>,
+    finishedBookIds: Set<String>,
+    nowEpochMs: Long,
+    zone: ZoneId = ZoneId.systemDefault(),
+): ReviewStatistics {
+    val completed = sessions.filter { it.state == ReadingSessionState.COMPLETED }
+    val today = Instant.ofEpochMilli(nowEpochMs).atZone(zone).toLocalDate()
+    val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
+    val monthStart = today.withDayOfMonth(1)
+
+    val byDate = completed
+        .filter { it.endedAtEpochMs != null }
+        .groupBy { Instant.ofEpochMilli(it.endedAtEpochMs!!).atZone(zone).toLocalDate() }
+    val daily = byDate
+        .map { (date, list) -> DailyReadingDuration(date, list.sumOf { it.activeDurationMs }) }
+        .filter { it.durationMs > 0 }
+        .sortedBy { it.date }
+
+    val todayMs = daily.filter { it.date == today }.sumOf { it.durationMs }
+    val weekMs = daily.filter { it.date >= weekStart && it.date < weekStart.plusWeeks(1) }.sumOf { it.durationMs }
+    val monthMs = daily.filter { it.date >= monthStart && it.date < monthStart.plusMonths(1) }.sumOf { it.durationMs }
+
+    val byBook = completed.groupBy { it.bookId }
+    val topBook = byBook.entries.maxByOrNull { it.value.sumOf { session -> session.activeDurationMs } }
+
+    return ReviewStatistics(
+        totalDurationMs = completed.sumOf { it.activeDurationMs },
+        todayDurationMs = todayMs,
+        weekDurationMs = weekMs,
+        monthDurationMs = monthMs,
+        readingDays = daily.size,
+        currentStreakDays = currentStreak(daily.map { it.date }.toSet(), today),
+        finishedBookCount = finishedBookIds.size,
+        dailyDurations = daily,
+        topBookId = topBook?.key,
+        topBookDurationMs = topBook?.value?.sumOf { session -> session.activeDurationMs } ?: 0,
+    )
+}
+
+private fun currentStreak(readingDates: Set<LocalDate>, today: LocalDate): Int {
+    var day = today
+    if (day !in readingDates) day = day.minusDays(1)
+    var count = 0
+    while (day in readingDates) {
+        count += 1
+        day = day.minusDays(1)
+    }
+    return count
+}
