@@ -42,13 +42,17 @@ import com.shiyue.reader.app.navigation.navigateToFinishReading
 import com.shiyue.reader.app.navigation.navigateToRecoverReading
 import com.shiyue.reader.app.navigation.navigateToReadingSessionDetail
 import com.shiyue.reader.app.navigation.navigateToEditReadingSession
+import com.shiyue.reader.app.navigation.navigateToCreateNote
+import com.shiyue.reader.app.navigation.navigateToEditNote
 import com.shiyue.reader.feature.bookedit.AddBookRoute
 import com.shiyue.reader.feature.bookedit.EditBookRoute
 import com.shiyue.reader.feature.bookdetail.BookDetailRoute
 import com.shiyue.reader.feature.bookprogress.UpdateProgressRoute
 import com.shiyue.reader.feature.category.CategoryManagerRoute
 import com.shiyue.reader.feature.bookshelf.BookshelfRoute
-import com.shiyue.reader.feature.note.NoteScreen
+import com.shiyue.reader.feature.note.NoteRoute
+import com.shiyue.reader.feature.note.CreateNoteRoute
+import com.shiyue.reader.feature.note.EditNoteRoute
 import com.shiyue.reader.feature.reading.ReadingRoute
 import com.shiyue.reader.feature.reading.StartReadingRoute
 import com.shiyue.reader.feature.reading.ActiveReadingRoute
@@ -148,8 +152,24 @@ fun ShiyueApp() {
             composable(ShiyueDestination.Reading.route) {
                 ReadingRoute(navController::navigateToStartReading, navController::navigateToActiveReading, navController::navigateToRecoverReading)
             }
-            composable(ShiyueDestination.Note.route) { NoteScreen() }
+            composable(ShiyueDestination.Note.route) { NoteRoute(onNoteClick = navController::navigateToEditNote) }
             composable(ShiyueDestination.Review.route) { ReviewRoute() }
+            composable(
+                route = ShiyueRoutes.NoteCreate,
+                arguments = listOf(
+                    navArgument(ShiyueRoutes.BookIdArgument) { type = NavType.StringType },
+                    navArgument(ShiyueRoutes.SessionIdArgument) { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument(ShiyueRoutes.PageArgument) { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
+            ) {
+                CreateNoteRoute(onBack = { navController.popBackStack() })
+            }
+            composable(
+                route = ShiyueRoutes.NoteEdit,
+                arguments = listOf(navArgument(ShiyueRoutes.NoteIdArgument) { type = NavType.StringType }),
+            ) {
+                EditNoteRoute(onBack = { navController.popBackStack() })
+            }
             composable(ShiyueRoutes.AddBook) {
                 AddBookRoute(onBack = { navController.popBackStack() })
             }
@@ -163,6 +183,7 @@ fun ShiyueApp() {
                     onUpdateProgress = navController::navigateToUpdateProgress,
                     onStartReading = navController::navigateToStartReading,
                     onSessionClick = navController::navigateToReadingSessionDetail,
+                    onNoteClick = navController::navigateToEditNote,
                 )
             }
             composable(
@@ -184,7 +205,12 @@ fun ShiyueApp() {
                 StartReadingRoute({ navController.popBackStack() }, navController::navigateToActiveReading)
             }
             composable(ShiyueRoutes.ActiveReading) {
-                ActiveReadingRoute({ navController.popBackStack() }, navController::navigateToFinishReading, navController::navigateToRecoverReading)
+                ActiveReadingRoute(
+                    { navController.popBackStack() },
+                    navController::navigateToFinishReading,
+                    navController::navigateToRecoverReading,
+                    navController::navigateToCreateNote,
+                )
             }
             composable(ShiyueRoutes.FinishReading, arguments = listOf(navArgument(ShiyueRoutes.SessionIdArgument) { type = NavType.StringType })) {
                 FinishReadingRoute(onBack = { navController.popBackStack() }, onSaved = { bookId ->

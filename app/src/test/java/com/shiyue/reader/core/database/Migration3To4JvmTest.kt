@@ -10,6 +10,7 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -17,14 +18,14 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], application = Application::class, manifest = Config.NONE)
-class Migration1To2JvmTest {
+class Migration3To4JvmTest {
     @Test
-    fun `Room opens a version one database through migration without losing books`() = runBlocking {
+    fun `Room opens a version three database through migration with an empty notes table`() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         context.deleteDatabase(DATABASE_NAME)
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
             .name(DATABASE_NAME)
-            .callback(object : SupportSQLiteOpenHelper.Callback(1) {
+            .callback(object : SupportSQLiteOpenHelper.Callback(3) {
                 override fun onCreate(db: SupportSQLiteDatabase) {
                     db.execSQL(
                         """CREATE TABLE IF NOT EXISTS books (
@@ -36,6 +37,8 @@ class Migration1To2JvmTest {
                     )
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_books_status ON books(status)")
                     db.execSQL("CREATE INDEX IF NOT EXISTS index_books_updated_at ON books(updated_at)")
+                    MIGRATION_1_2.migrate(db)
+                    MIGRATION_2_3.migrate(db)
                     db.execSQL(
                         """INSERT INTO books VALUES
                             ('00000000-0000-0000-0000-000000000001', 'Existing', NULL, NULL,
@@ -55,13 +58,13 @@ class Migration1To2JvmTest {
             .build()
         try {
             assertEquals("Existing", database.bookDao().getById("00000000-0000-0000-0000-000000000001")?.title)
-            assertEquals(0, database.categoryDao().observeAllWithBookCount().first().size)
-            assertEquals(0, database.bookDao().observeAllWithCategories().first().single().categories.size)
+            assertEquals(0, database.noteDao().observeAll().first().size)
+            assertNull(database.noteDao().getById("10000000-0000-0000-0000-000000000001"))
         } finally {
             database.close()
             context.deleteDatabase(DATABASE_NAME)
         }
     }
 
-    private companion object { const val DATABASE_NAME = "migration-jvm.db" }
+    private companion object { const val DATABASE_NAME = "migration-3-4-jvm.db" }
 }

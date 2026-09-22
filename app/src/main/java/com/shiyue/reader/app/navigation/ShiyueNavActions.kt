@@ -45,3 +45,11 @@ fun NavHostController.navigateToReadingSessionDetail(sessionId: String) {
 fun NavHostController.navigateToEditReadingSession(sessionId: String) {
     navigate(ShiyueRoutes.editReadingSession(sessionId)) { launchSingleTop = true }
 }
+
+fun NavHostController.navigateToCreateNote(bookId: String, sessionId: String?, page: Int?) {
+    navigate(ShiyueRoutes.createNote(bookId, sessionId, page)) { launchSingleTop = true }
+}
+
+fun NavHostController.navigateToEditNote(noteId: String) {
+    navigate(ShiyueRoutes.editNote(noteId)) { launchSingleTop = true }
+}

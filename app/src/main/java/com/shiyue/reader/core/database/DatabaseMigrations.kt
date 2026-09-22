@@ -79,3 +79,27 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_active_reading_session_session_id` ON `active_reading_session` (`session_id`)")
     }
 }
+
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS `notes` (
+                `id` TEXT NOT NULL,
+                `book_id` TEXT NOT NULL,
+                `session_id` TEXT,
+                `page_number` INTEGER,
+                `content` TEXT NOT NULL,
+                `image_path` TEXT,
+                `created_at` INTEGER NOT NULL,
+                `updated_at` INTEGER NOT NULL,
+                PRIMARY KEY(`id`),
+                FOREIGN KEY(`book_id`) REFERENCES `books`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                FOREIGN KEY(`session_id`) REFERENCES `reading_sessions`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+            )""".trimIndent(),
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_book_id` ON `notes` (`book_id`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_session_id` ON `notes` (`session_id`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_book_id_created_at` ON `notes` (`book_id`, `created_at`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_created_at` ON `notes` (`created_at`)")
+    }
+}

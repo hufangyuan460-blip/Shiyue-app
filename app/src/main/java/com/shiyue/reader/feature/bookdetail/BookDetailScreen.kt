@@ -53,6 +53,7 @@ import com.shiyue.reader.core.model.Book
 import com.shiyue.reader.feature.bookshelf.DefaultBookCover
 import com.shiyue.reader.feature.bookshelf.BookCover
 import com.shiyue.reader.feature.bookshelf.statusLabel
+import com.shiyue.reader.feature.note.BookNotesSection
 import com.shiyue.reader.feature.reading.BookReadingHistorySection
 import java.text.DateFormat
 import java.util.Date
@@ -70,6 +71,7 @@ fun BookDetailRoute(
     onUpdateProgress: (String) -> Unit,
     onStartReading: (String) -> Unit,
     onSessionClick: (String) -> Unit,
+    onNoteClick: (String) -> Unit = {},
     viewModel: BookDetailViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -87,6 +89,7 @@ fun BookDetailRoute(
         onUpdateProgress = onUpdateProgress,
         onStartReading = onStartReading,
         onSessionClick = onSessionClick,
+        onNoteClick = onNoteClick,
         onDelete = viewModel::delete,
     )
 }
@@ -101,6 +104,7 @@ fun BookDetailScreen(
     onUpdateProgress: (String) -> Unit,
     onStartReading: (String) -> Unit = {},
     onSessionClick: (String) -> Unit = {},
+    onNoteClick: (String) -> Unit = {},
     onDelete: () -> Unit = {},
 ) {
     val loadingDescription = stringResource(R.string.book_detail_loading)
@@ -135,6 +139,7 @@ fun BookDetailScreen(
                     onUpdateProgress = { onUpdateProgress(uiState.libraryBook.book.id) },
                     onStartReading = { onStartReading(uiState.libraryBook.book.id) },
                     onSessionClick = onSessionClick,
+                    onNoteClick = onNoteClick,
                     onDelete = onDelete,
                 )
             }
@@ -151,6 +156,7 @@ private fun DetailContent(
     onUpdateProgress: () -> Unit,
     onStartReading: () -> Unit,
     onSessionClick: (String) -> Unit,
+    onNoteClick: (String) -> Unit,
     onDelete: () -> Unit,
 ) {
     val book = libraryBook.book
@@ -216,6 +222,7 @@ private fun DetailContent(
         ) { Text(stringResource(R.string.delete_book), color = MaterialTheme.colorScheme.error) }
         if (deleteFailed) Text(stringResource(R.string.delete_book_failed), color = MaterialTheme.colorScheme.error)
         BookReadingHistorySection(onSessionClick)
+        BookNotesSection(onNoteClick)
     }
     if (confirmDelete) androidx.compose.material3.AlertDialog(
         onDismissRequest = { confirmDelete = false },

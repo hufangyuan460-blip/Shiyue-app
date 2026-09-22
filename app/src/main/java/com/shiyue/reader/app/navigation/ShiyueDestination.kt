@@ -29,6 +29,10 @@ object ShiyueRoutes {
     const val RecoverReading = "reading/recover/{$SessionIdArgument}"
     const val ReadingSessionDetail = "reading/session/{$SessionIdArgument}"
     const val EditReadingSession = "reading/session/{$SessionIdArgument}/edit"
+    const val NoteIdArgument = "noteId"
+    const val PageArgument = "page"
+    const val NoteCreate = "note/create?bookId={$BookIdArgument}&sessionId={$SessionIdArgument}&page={$PageArgument}"
+    const val NoteEdit = "note/edit/{$NoteIdArgument}"
 
     fun bookDetail(bookId: String) = "book/$bookId"
 
@@ -41,4 +45,13 @@ object ShiyueRoutes {
     fun recoverReading(sessionId: String) = "reading/recover/$sessionId"
     fun readingSessionDetail(sessionId: String) = "reading/session/$sessionId"
     fun editReadingSession(sessionId: String) = "reading/session/$sessionId/edit"
+
+    fun createNote(bookId: String, sessionId: String?, page: Int?): String =
+        buildString {
+            append("note/create?bookId=$bookId")
+            if (sessionId != null) append("&sessionId=$sessionId")
+            if (page != null) append("&page=$page")
+        }
+
+    fun editNote(noteId: String) = "note/edit/$noteId"
 }

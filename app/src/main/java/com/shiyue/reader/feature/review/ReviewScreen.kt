@@ -164,7 +164,8 @@ private fun ReadingCalendar(
             Spacer(Modifier.height(4.dp))
             val leadingBlanks = month.atDay(1).dayOfWeek.value - 1
             val cells: List<ReviewCalendarDay?> = List(leadingBlanks) { null } + days
-            cells.chunked(7).forEach { week ->
+            val paddedToFullWeeks = cells + List((7 - cells.size % 7) % 7) { null }
+            paddedToFullWeeks.chunked(7).forEach { week ->
                 Row(Modifier.fillMaxWidth()) {
                     week.forEach { cell ->
                         Box(Modifier.weight(1f).padding(2.dp)) {

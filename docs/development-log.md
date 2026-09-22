@@ -33,6 +33,21 @@
 - Android Lint 通过，无错误；`compileDebugAndroidTestKotlin` 通过，androidTest 测试 Repository 已同步实现新接口。
 - `git diff --check` 通过。
 
+## 2026-08-10：随记 1.0 与启动崩溃修复
+
+### 已完成功能
+
+- Room 升级到 v4，新增 `notes` 表（显式 `Migration(3, 4)` 与 Schema）；随记图片存 `files/notes/`，删除书籍级联删除随记并由启动孤儿清理补偿，删除场次将随记 `session_id` 置空而非删除随记。
+- 计时页新增「写下此刻」快速随记：自动关联当前书与场次，页码默认起始页；表单支持正文、选填页码、相册/拍照一张图片；保存后返回计时页。
+- 底部「随记」tab：全部随记按时间倒序，支持按书筛选；书籍详情新增随记区块；随记可编辑/删除，删除清理本地图片。
+- 修复启动闪退：随记创建路由的页码参数误用 `NavType.IntType + nullable=true`（Navigation 不支持）且路由字符串缺少 `{bookId}` 等占位符，已在模拟器复现并修复。
+
+### 自动化验证
+
+- 104 项 JVM 单元及 Robolectric 测试通过；Lint 通过；`assembleDebug` 通过。
+- `NoteFlowTest`（计时页写随记→保存→随记列表可见）在模拟器通过；随记功能按你的要求仅在计时页提供创建入口。
+- 已知限制：androidTest 的 `MigrationTestHelper` 类迁移测试在设备上因 kotlinx-serialization 版本兼容问题报 `AbstractMethodError`（Migration1→4 均受影响，属既有工具链问题）；生产迁移正确性由 JVM Robolectric 迁移测试覆盖并通过。
+
 ## 2026-08-06：书架 1.0 完成并通过真机验收
 
 对应功能提交：`f614fdbc972a50e82237b0a5a32d6a3b9f4af8ec`

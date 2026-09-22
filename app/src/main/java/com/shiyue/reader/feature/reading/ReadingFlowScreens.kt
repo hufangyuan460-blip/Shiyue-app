@@ -56,6 +56,7 @@ object ReadingFlowTestTags {
     const val Finish = "reading_finish"
     const val EndPage = "reading_end_page"
     const val SaveSummary = "reading_save_summary"
+    const val WriteNote = "reading_write_note"
 }
 
 @Composable
@@ -99,6 +100,7 @@ fun StartReadingRoute(onBack: () -> Unit, onOpenActive: () -> Unit, viewModel: S
 @Composable
 fun ActiveReadingRoute(
     onBack: () -> Unit, onFinish: (String) -> Unit, onRecover: (String) -> Unit,
+    onWriteNote: (String, String, Int) -> Unit,
     viewModel: ActiveReadingViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -133,6 +135,11 @@ fun ActiveReadingRoute(
                 Text(stringResource(if (session.state == ReadingSessionState.ACTIVE) R.string.pause_reading else R.string.resume_reading))
             }
             Button(onClick = viewModel::finish, enabled = !state.isWorking, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag(ReadingFlowTestTags.Finish)) { Text(stringResource(R.string.finish_reading)) }
+            OutlinedButton(
+                onClick = { onWriteNote(session.bookId, session.id, session.startPage) },
+                enabled = !state.isWorking,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).testTag(ReadingFlowTestTags.WriteNote),
+            ) { Text(stringResource(R.string.note_write_title)) }
             OutlinedButton(onClick = { confirmDiscard = true }, enabled = !state.isWorking, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text(stringResource(R.string.discard_session)) }
         }
     }

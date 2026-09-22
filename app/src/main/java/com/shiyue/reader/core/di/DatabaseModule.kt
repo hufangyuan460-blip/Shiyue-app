@@ -6,6 +6,8 @@ import com.shiyue.reader.core.database.BookDao
 import com.shiyue.reader.core.database.CategoryDao
 import com.shiyue.reader.core.database.MIGRATION_1_2
 import com.shiyue.reader.core.database.MIGRATION_2_3
+import com.shiyue.reader.core.database.MIGRATION_3_4
+import com.shiyue.reader.core.database.NoteDao
 import com.shiyue.reader.core.database.ReadingSessionDao
 import com.shiyue.reader.core.database.ShiyueDatabase
 import dagger.Module
@@ -26,7 +28,7 @@ object DatabaseModule {
         context,
         ShiyueDatabase::class.java,
         ShiyueDatabase.DATABASE_NAME,
-    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+    ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
 
     @Provides
     fun provideBookDao(database: ShiyueDatabase): BookDao = database.bookDao()
@@ -36,4 +38,7 @@ object DatabaseModule {
 
     @Provides
     fun provideReadingSessionDao(database: ShiyueDatabase): ReadingSessionDao = database.readingSessionDao()
+
+    @Provides
+    fun provideNoteDao(database: ShiyueDatabase): NoteDao = database.noteDao()
 }

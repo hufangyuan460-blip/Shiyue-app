@@ -4,11 +4,15 @@ import com.shiyue.reader.core.data.TestBookRepository
 import com.shiyue.reader.core.data.TestBookshelfPreferences
 import com.shiyue.reader.core.data.TestCategoryRepository
 import com.shiyue.reader.core.data.TestCoverStorage
+import com.shiyue.reader.core.data.TestNoteImageStorage
+import com.shiyue.reader.core.data.TestNoteRepository
 import com.shiyue.reader.core.data.TestReadingSessionRepository
 import com.shiyue.reader.domain.repository.BookRepository
 import com.shiyue.reader.domain.repository.BookshelfPreferences
 import com.shiyue.reader.domain.repository.CategoryRepository
 import com.shiyue.reader.domain.repository.CoverStorage
+import com.shiyue.reader.domain.repository.NoteImageStorage
+import com.shiyue.reader.domain.repository.NoteRepository
 import com.shiyue.reader.domain.repository.ReadingSessionRepository
 import dagger.Binds
 import dagger.Module
@@ -41,4 +45,12 @@ abstract class TestRepositoryModule {
     @Binds
     @Singleton
     abstract fun bindReadingSessionRepository(repository: TestReadingSessionRepository): ReadingSessionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNoteRepository(repository: TestNoteRepository): NoteRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNoteImageStorage(storage: TestNoteImageStorage): NoteImageStorage
 }
